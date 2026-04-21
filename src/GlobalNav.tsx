@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Sun, Moon, House, X, ChevronRight } from 'lucide-react'
 import { translations, type Lang } from './i18n'
-import { getAltPaths, getPageTitles, getSectionLabels, getEsSlugs } from './articles/registry'
+import { getAltPaths, getPageTitles, getSectionLabels } from './articles/registry'
 
 /**
  * GlobalNav — unified navigation across all pages.
@@ -21,7 +21,6 @@ const ALT_PATH = getAltPaths()
 const BANNER_DISMISSED_KEY = 'lang-banner-dismissed'
 const PAGE_TITLE = getPageTitles()
 const SECTION_LABELS = getSectionLabels()
-const ES_SLUGS = getEsSlugs()
 
 /** Observes h2[id] elements and returns the currently visible section ID */
 function useActiveSection(pathname: string, enabled: boolean) {
@@ -81,7 +80,7 @@ function useActiveSection(pathname: string, enabled: boolean) {
 function useLang() {
   const { pathname } = useLocation()
   const isHome = pathname === '/' || pathname === '/en'
-  const lang: 'es' | 'en' = ES_SLUGS.has(pathname) ? 'es' : 'en'
+  const lang: 'en' = 'en'
   const pageTitle = PAGE_TITLE[pathname] ?? null
   return { pathname, isHome, lang, pageTitle }
 }
@@ -150,7 +149,7 @@ function useLanguageBanner(lang: Lang) {
     if (stored) return // already 'shown' or 'dismissed'
 
     const browserPrefersEn = !navigator.language.toLowerCase().startsWith('es')
-    const mismatch = (lang === 'es' && browserPrefersEn) || (lang === 'en' && !browserPrefersEn)
+    const mismatch = !browserPrefersEn
     if (!mismatch) return
 
     const timer = setTimeout(() => {
@@ -164,7 +163,7 @@ function useLanguageBanner(lang: Lang) {
   useEffect(() => {
     if (!visible) return
     const browserPrefersEn = !navigator.language.toLowerCase().startsWith('es')
-    const mismatch = (lang === 'es' && browserPrefersEn) || (lang === 'en' && !browserPrefersEn)
+    const mismatch = !browserPrefersEn
     if (!mismatch) {
       sessionStorage.setItem(BANNER_DISMISSED_KEY, 'dismissed')
       setVisible(false)
@@ -179,20 +178,7 @@ function useLanguageBanner(lang: Lang) {
   return { showBanner: visible, dismiss, animateBanner: visible && isFirstAppearance.current }
 }
 
-/** Circular flag icons — Spain (red-yellow-red) and UK (Union Jack simplified) */
-function FlagES({ className = "w-4 h-4" }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 16 16" aria-hidden="true">
-      <clipPath id="flagCircleES"><circle cx="8" cy="8" r="8" /></clipPath>
-      <g clipPath="url(#flagCircleES)">
-        <rect y="0" width="16" height="4" fill="#c60b1e" />
-        <rect y="4" width="16" height="8" fill="#ffc400" />
-        <rect y="12" width="16" height="4" fill="#c60b1e" />
-      </g>
-    </svg>
-  )
-}
-
+/** Circular flag icon — UK (Union Jack simplified) */
 function FlagEN({ className = "w-4 h-4" }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 16 16" aria-hidden="true">
@@ -209,8 +195,8 @@ function FlagEN({ className = "w-4 h-4" }: { className?: string }) {
 }
 
 /** Shared controls: flag lang pill + theme circle */
-function NavControls({ altPath, altLabel, lang, isDark, toggleTheme }: {
-  altPath: string; altLabel: string; lang: Lang; isDark: boolean; toggleTheme: () => void
+function NavControls({ altPath, altLabel, isDark, toggleTheme }: {
+  altPath: string; altLabel: string; isDark: boolean; toggleTheme: () => void
 }) {
   return (
     <div className="flex items-center gap-2">
@@ -218,7 +204,7 @@ function NavControls({ altPath, altLabel, lang, isDark, toggleTheme }: {
         to={altPath}
         className="inline-flex items-center justify-center gap-1.5 w-[4.5rem] h-10 rounded-full bg-card border border-border text-sm font-medium text-muted-foreground hover:text-foreground hover:border-primary/50 transition-colors"
       >
-        {lang === 'es' ? <FlagES className="w-3.5 h-3.5" /> : <FlagEN className="w-3.5 h-3.5" />}
+        <FlagEN className="w-3.5 h-3.5" />
         {altLabel}
       </Link>
       <button
@@ -239,8 +225,8 @@ export default function GlobalNav() {
   const navigate = useNavigate()
   const activeSection = useActiveSection(pathname, !isHome)
 
-  const altPath = ALT_PATH[pathname] || (lang === 'es' ? '/en' : '/')
-  const altLabel = lang === 'es' ? 'ES' : 'EN'
+  const altPath = ALT_PATH[pathname] || ('/')
+  const altLabel = 'EN'
 
   const t = translations[lang]
   const hasBar = !isHome
@@ -267,7 +253,7 @@ export default function GlobalNav() {
     navigate(altPath)
   }
 
-  const controls = <NavControls altPath={altPath} altLabel={altLabel} lang={lang} isDark={isDark} toggleTheme={toggleTheme} />
+  const controls = <NavControls altPath={altPath} altLabel={altLabel} isDark={isDark} toggleTheme={toggleTheme} />
 
   const fade = (duration: string) => ({ animation: `nav-fade-in ${duration} ease-out` })
 
@@ -282,7 +268,7 @@ export default function GlobalNav() {
         onClick={switchLang}
         className="inline-flex items-center gap-1 font-medium text-primary hover:text-primary/80 transition-colors"
       >
-        {t.ui.languageBannerSwitchPrefix}{lang === 'es' ? <FlagEN className="w-3.5 h-3.5 mx-0.5" /> : <FlagES className="w-3.5 h-3.5 mx-0.5" />}{t.ui.languageBannerSwitchLang}
+        {t.ui.languageBannerSwitchPrefix}<FlagEN className="w-3.5 h-3.5 mx-0.5" />{t.ui.languageBannerSwitchLang}
       </button>
       <button
         onClick={dismiss}

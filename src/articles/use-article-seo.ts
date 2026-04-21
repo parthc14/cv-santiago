@@ -54,7 +54,7 @@ export function useArticleSeo(opts: ArticleSeoOpts) {
 
     const url = `https://santifer.io/${slug}`
     const altUrl = `https://santifer.io/${altSlug}`
-    const altLang = lang === 'es' ? 'en' : 'es'
+    const altLang = 'es'
     const defaultSlug = xDefaultSlug ?? (lang === 'es' ? slug : altSlug)
 
     document.title = title
@@ -70,11 +70,11 @@ export function useArticleSeo(opts: ArticleSeoOpts) {
     upsertMeta('property', 'og:title', title)
     upsertMeta('property', 'og:description', description)
     upsertMeta('property', 'og:site_name', 'santifer.io')
-    upsertMeta('property', 'og:locale', lang === 'es' ? 'es_ES' : 'en_US')
-    upsertMeta('property', 'og:locale:alternate', lang === 'es' ? 'en_US' : 'es_ES')
+    upsertMeta('property', 'og:locale', 'en_US')
+    upsertMeta('property', 'og:locale:alternate', 'es_ES')
     upsertMeta('property', 'article:published_time', publishedTime)
     if (modifiedTime) upsertMeta('property', 'article:modified_time', modifiedTime)
-    upsertMeta('property', 'article:author', 'https://www.linkedin.com/in/santifer')
+    upsertMeta('property', 'article:author', 'https://www.linkedin.com/in/parth-chitroda')
     upsertMeta('property', 'article:tag', articleTags)
     if (image) upsertMeta('property', 'og:image', image)
 

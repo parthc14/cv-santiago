@@ -27,22 +27,9 @@ import AboutPage from '../src/AboutPage.tsx';
 import { aboutContent } from '../src/about-i18n.ts';
 import PrivacyPolicy from '../src/PrivacyPolicy.tsx';
 import { seo } from '../src/i18n.ts';
-import { n8nContent } from '../src/n8n-i18n.ts';
-import { jacoboContent } from '../src/jacobo-i18n.ts';
-import { businessOsContent } from '../src/business-os-i18n.ts';
-import { pseoContent } from '../src/pseo-i18n.ts';
-import { chatbotContent } from '../src/chatbot-i18n.ts';
-import { careerOpsContent } from '../src/career-ops-i18n.ts';
 
-// Map article id → i18n content for JSON-LD generation
-const i18nMap: Record<string, Record<string, { header: { h1: string }; nav: { breadcrumbHome: string; breadcrumbCurrent: string }; faq: { items: readonly { q: string; a: string }[] } }>> = {
-  'n8n-for-pms': n8nContent,
-  'jacobo': jacoboContent,
-  'business-os': businessOsContent,
-  'programmatic-seo': pseoContent,
-  'self-healing-chatbot': chatbotContent,
-  'career-ops': careerOpsContent,
-};
+// Map article id → i18n content for JSON-LD generation (empty for now, as all articles have been removed)
+const i18nMap: Record<string, Record<string, { header: { h1: string }; nav: { breadcrumbHome: string; breadcrumbCurrent: string }; faq: { items: readonly { q: string; a: string }[] } }>> = {};
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, '..');
@@ -55,8 +42,8 @@ function stripReactSSRTags(html: string): string {
 // ---------------------------------------------------------------------------
 // SSR render per language (home page)
 // ---------------------------------------------------------------------------
-function renderApp(lang: 'es' | 'en'): string {
-  const path = lang === 'en' ? '/en' : '/';
+function renderApp(lang: 'en'): string {
+  const path = '/en';
   return stripReactSSRTags(renderToString(
     <StaticRouter location={path}>
       <div>
@@ -71,7 +58,7 @@ function renderApp(lang: 'es' | 'en'): string {
   ));
 }
 
-function renderArticlePage(slug: string, ArticleComponent: ComponentType<{ lang: 'es' | 'en' }>, lang: 'es' | 'en'): string {
+function renderArticlePage(slug: string, ArticleComponent: ComponentType<{ lang: 'en' }>, lang: 'en'): string {
   return stripReactSSRTags(renderToString(
     <StaticRouter location={`/${slug}`}>
       <GlobalNav />
@@ -104,28 +91,7 @@ try {
   process.exit(1);
 }
 
-// --- ES version (inject into existing index.html) ---
-let esHtml: string;
-try {
-  esHtml = renderApp('es');
-} catch (err) {
-  console.error('[prerender] SSR failed for ES, falling back to empty root:', err);
-  esHtml = '';
-}
-
-const esSeo = seo.es;
-
-const injectedEs = indexHtml
-  .replace('<div id="root"></div>', `<div id="root">${esHtml}</div>`)
-  .replace(/<title>[^<]*<\/title>/, `<title>${esc(esSeo.title)}</title>`)
-  .replace(/<meta name="title" content="[^"]*" \/>/, `<meta name="title" content="${esc(esSeo.title)}" />`)
-  .replace(/<meta name="description" content="[^"]*" \/>/, `<meta name="description" content="${esc(esSeo.description)}" />`)
-  .replace(/<meta property="og:title" content="[^"]*" \/>/, `<meta property="og:title" content="${esc(esSeo.title)}" />`)
-  .replace(/<meta property="og:description" content="[^"]*" \/>/, `<meta property="og:description" content="${esc(esSeo.description)}" />`)
-  .replace(/<meta name="twitter:title" content="[^"]*" \/>/, `<meta name="twitter:title" content="${esc(esSeo.title)}" />`)
-  .replace(/<meta name="twitter:description" content="[^"]*" \/>/, `<meta name="twitter:description" content="${esc(esSeo.description)}" />`);
-
-// --- EN version ---
+// --- EN version (home page) ---
 let enHtml: string;
 try {
   enHtml = renderApp('en');
@@ -138,7 +104,6 @@ const enSeo = seo.en;
 
 let enPage = indexHtml
   .replace('<div id="root"></div>', `<div id="root">${enHtml}</div>`)
-  .replace('<html lang="es" class="dark">', '<html lang="en" class="dark">')
   .replace(/<title>[^<]*<\/title>/, `<title>${esc(enSeo.title)}</title>`)
   .replace(/<meta name="title" content="[^"]*" \/>/, `<meta name="title" content="${esc(enSeo.title)}" />`)
   .replace(/<meta name="description" content="[^"]*" \/>/, `<meta name="description" content="${esc(enSeo.description)}" />`)
@@ -241,15 +206,15 @@ interface AboutPageData {
 
 const aboutPages: AboutPageData[] = [];
 
-for (const lang of ['es', 'en'] as const) {
+for (const lang of ['en'] as const) {
   const t = aboutContent[lang];
   const slug = t.slug;
   const altSlug = t.altSlug;
   const url = `https://santifer.io/${slug}`;
   const altUrl = `https://santifer.io/${altSlug}`;
-  const altLang = lang === 'es' ? 'en' : 'es';
-  const ogLocale = lang === 'es' ? 'es_ES' : 'en_US';
-  const ogLocaleAlt = lang === 'es' ? 'en_US' : 'es_ES';
+  const altLang = 'en';
+  const ogLocale = 'en_US';
+  const ogLocaleAlt = 'en_US';
 
   let renderedHtml: string;
   try {
@@ -270,7 +235,7 @@ for (const lang of ['es', 'en'] as const) {
     renderedHtml = '';
   }
 
-  const hreflangLinks = `<link rel="alternate" hreflang="${lang}" href="${url}" /><link rel="alternate" hreflang="${altLang}" href="${altUrl}" /><link rel="alternate" hreflang="x-default" href="https://santifer.io/sobre-mi" />`;
+  const hreflangLinks = `<link rel="alternate" hreflang="${lang}" href="${url}" />`;
 
   let result = indexHtml
     .replace('<div id="root"></div>', `<div id="root">${renderedHtml}</div>`)
@@ -284,8 +249,8 @@ for (const lang of ['es', 'en'] as const) {
     .replace(/<meta property="og:url" content="[^"]*" \/>/, `<meta property="og:url" content="${url}" />`)
     .replace(/<meta property="og:title" content="[^"]*" \/>/, `<meta property="og:title" content="${esc(t.seo.title)}" />`)
     .replace(/<meta property="og:description" content="[^"]*" \/>/, `<meta property="og:description" content="${esc(t.seo.description)}" />`)
-    .replace(/<meta property="og:locale" content="es_ES" \/>/, `<meta property="og:locale" content="${ogLocale}" />`)
-    .replace(/<meta property="og:locale:alternate" content="en_US" \/>/, `<meta property="og:locale:alternate" content="${ogLocaleAlt}" />`)
+    .replace(/<meta property="og:locale" content="es_ES" \/>/, '<meta property="og:locale" content="en_US" />')
+    .replace(/<meta property="og:locale:alternate" content="en_US" \/>/, '<meta property="og:locale:alternate" content="en_US" />')
     .replace(/<meta name="twitter:url" content="[^"]*" \/>/, `<meta name="twitter:url" content="${url}" />`)
     .replace(/<meta name="twitter:title" content="[^"]*" \/>/, `<meta name="twitter:title" content="${esc(t.seo.title)}" />`)
     .replace(/<meta name="twitter:description" content="[^"]*" \/>/, `<meta name="twitter:description" content="${esc(t.seo.description)}" />`);
@@ -309,17 +274,17 @@ interface ArticlePage {
 
 function buildArticlePage(
   config: ArticleConfig,
-  lang: 'es' | 'en',
-  ArticleComponent: ComponentType<{ lang: 'es' | 'en' }>,
+  lang: 'en',
+  ArticleComponent: ComponentType<{ lang: 'en' }>,
 ): string {
   const slug = config.slugs[lang];
-  const altSlug = config.slugs[lang === 'es' ? 'en' : 'es'];
+  const altSlug = config.slugs['en'];
   const url = `https://santifer.io/${slug}`;
   const altUrl = `https://santifer.io/${altSlug}`;
-  const altLang = lang === 'es' ? 'en' : 'es';
-  const htmlLang = lang;
-  const ogLocale = lang === 'es' ? 'es_ES' : 'en_US';
-  const ogLocaleAlt = lang === 'es' ? 'en_US' : 'es_ES';
+  const altLang = 'en';
+  const htmlLang = 'en';
+  const ogLocale = 'en_US';
+  const ogLocaleAlt = 'en_US';
   const articleSeo = config.seo[lang];
   const xDefaultHref = `https://santifer.io/${config.xDefaultSlug || config.slugs.es}`;
 
@@ -414,7 +379,7 @@ function buildArticlePage(
 const articlePages: ArticlePage[] = [];
 
 for (const config of articleRegistry) {
-  let ArticleComponent: ComponentType<{ lang: 'es' | 'en' }>;
+  let ArticleComponent: ComponentType<{ lang: 'en' }>;
   try {
     const mod = await config.component();
     ArticleComponent = mod.default;
@@ -423,14 +388,9 @@ for (const config of articleRegistry) {
     continue;
   }
 
-  const seen = new Set<string>();
-  for (const lang of ['es', 'en'] as const) {
-    const slug = config.slugs[lang];
-    if (seen.has(slug)) continue; // same slug for both languages
-    seen.add(slug);
-    const html = buildArticlePage(config, lang, ArticleComponent);
-    articlePages.push({ slug, html });
-  }
+  const slug = config.slugs['en'];
+  const html = buildArticlePage(config, 'en', ArticleComponent);
+  articlePages.push({ slug, html });
 }
 
 // ---------------------------------------------------------------------------
@@ -498,18 +458,16 @@ async function writePage(html: string, outputPath: string, label: string) {
 }
 
 // ---------------------------------------------------------------------------
-// Privacy pages — /privacidad (ES) + /privacy (EN)
+// Privacy pages — /privacy (EN)
 // ---------------------------------------------------------------------------
 const privacyPages: { slug: string; html: string }[] = [];
 
-for (const [lang, slug, altSlug] of [['es', 'privacidad', 'privacy'], ['en', 'privacy', 'privacidad']] as const) {
+for (const [lang, slug] of [['en', 'privacy']] as const) {
   const url = `https://santifer.io/${slug}`;
-  const altUrl = `https://santifer.io/${altSlug}`;
-  const altLang = lang === 'es' ? 'en' : 'es';
-  const title = lang === 'es' ? 'Política de Privacidad | santifer.io' : 'Privacy Policy | santifer.io';
-  const description = lang === 'es'
-    ? 'Política de privacidad de santifer.io. Cómo se recopilan y utilizan los datos del chatbot y la web.'
-    : 'Privacy policy for santifer.io. How chatbot and website data is collected and used.';
+  const altUrl = `https://santifer.io/privacy`;
+  const altLang = 'en';
+  const title = 'Privacy Policy | santifer.io';
+  const description = 'Privacy policy for santifer.io. How chatbot and website data is collected and used.';
 
   let renderedHtml: string;
   try {
@@ -530,7 +488,7 @@ for (const [lang, slug, altSlug] of [['es', 'privacidad', 'privacy'], ['en', 'pr
     renderedHtml = '';
   }
 
-  const hreflangLinks = `<link rel="alternate" hreflang="${lang}" href="${url}" /><link rel="alternate" hreflang="${altLang}" href="${altUrl}" /><link rel="alternate" hreflang="x-default" href="https://santifer.io/privacidad" />`;
+  const hreflangLinks = `<link rel="alternate" hreflang="${lang}" href="${url}" />`;
 
   let result = indexHtml
     .replace('<div id="root"></div>', `<div id="root">${renderedHtml}</div>`)
@@ -544,8 +502,8 @@ for (const [lang, slug, altSlug] of [['es', 'privacidad', 'privacy'], ['en', 'pr
     .replace(/<meta property="og:url" content="[^"]*" \/>/, `<meta property="og:url" content="${url}" />`)
     .replace(/<meta property="og:title" content="[^"]*" \/>/, `<meta property="og:title" content="${esc(title)}" />`)
     .replace(/<meta property="og:description" content="[^"]*" \/>/, `<meta property="og:description" content="${esc(description)}" />`)
-    .replace(/<meta property="og:locale" content="es_ES" \/>/, `<meta property="og:locale" content="${lang === 'es' ? 'es_ES' : 'en_US'}" />`)
-    .replace(/<meta property="og:locale:alternate" content="en_US" \/>/, `<meta property="og:locale:alternate" content="${lang === 'es' ? 'en_US' : 'es_ES'}" />`)
+    .replace(/<meta property="og:locale" content="es_ES" \/>/, '<meta property="og:locale" content="en_US" />')
+    .replace(/<meta property="og:locale:alternate" content="en_US" \/>/, '<meta property="og:locale:alternate" content="en_US" />')
     .replace(/<meta name="twitter:url" content="[^"]*" \/>/, `<meta name="twitter:url" content="${url}" />`)
     .replace(/<meta name="twitter:title" content="[^"]*" \/>/, `<meta name="twitter:title" content="${esc(title)}" />`)
     .replace(/<meta name="twitter:description" content="[^"]*" \/>/, `<meta name="twitter:description" content="${esc(description)}" />`);
@@ -558,8 +516,7 @@ for (const [lang, slug, altSlug] of [['es', 'privacidad', 'privacy'], ['en', 'pr
 
 async function inlineCriticalCSS() {
   // Home pages
-  await writePage(injectedEs, indexPath, 'ES: dist/index.html updated');
-  await writePage(enPage, resolve(distDir, 'en', 'index.html'), 'EN: dist/en/index.html created');
+  await writePage(enPage, indexPath, 'EN: dist/index.html created');
 
   // About pages
   for (const { slug, html } of aboutPages) {
@@ -618,7 +575,6 @@ function validateHydrationStructure(html: string, label: string) {
 }
 
 // Validate home pages
-validateHydrationStructure(injectedEs, 'home-es');
 validateHydrationStructure(enPage, 'home-en');
 
 // Validate about pages
