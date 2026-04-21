@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Sun, Moon, House, ChevronRight } from 'lucide-react'
-import { translations, type Lang } from './i18n'
 import { getPageTitles, getSectionLabels } from './articles/registry'
 
 /**
@@ -146,11 +145,10 @@ function NavControls({ isDark, toggleTheme }: {
 }
 
 export default function GlobalNav() {
-  const { pathname, isHome, lang, pageTitle } = useLang()
+  const { pathname, isHome, pageTitle } = useLang()
   const { isDark, toggleTheme } = useTheme()
   const activeSection = useActiveSection(pathname, !isHome)
 
-  const t = translations[lang]
   const hasBar = !isHome
 
   // Breadcrumb: show active section label or fall back to page title
