@@ -40,8 +40,65 @@ export interface ArticleConfig {
   seoMeta?: ArticleSeoMeta
 }
 
-// All Santiago's project articles removed for Parth's portfolio
-export const articleRegistry: ArticleConfig[] = []
+// Parth's portfolio articles
+export const articleRegistry: ArticleConfig[] = [
+  {
+    id: 'hawk',
+    slugs: { es: 'hawk', en: 'hawk' },
+    titles: { es: 'HAWK', en: 'HAWK' },
+    seo: {
+      es: {
+        title: 'HAWK: Predictive Operations Intelligence Platform',
+        description: 'Multi-site operational intelligence system with subprocess-level bottleneck detection and predictive analytics',
+      },
+      en: {
+        title: 'HAWK: Predictive Operations Intelligence Platform',
+        description: 'Multi-site operational intelligence system with subprocess-level bottleneck detection and predictive analytics',
+      },
+    },
+    sectionLabels: { es: {}, en: {} },
+    type: 'case-study',
+    component: () => import('./HAWK').then(m => ({ default: m.default })),
+    ragReady: true,
+    seoMeta: {
+      datePublished: '2023-10-01',
+      dateModified: '2024-04-21',
+      keywords: ['operations intelligence', 'distributed systems', 'AWS', 'machine learning', 'predictive analytics'],
+      articleType: 'TechArticle',
+      articleTags: 'operations,aws,systems-design,machine-learning',
+      images: [],
+      about: [{ name: 'Amazon WW Grocery' }],
+    },
+  },
+  {
+    id: 'grocery-identification',
+    slugs: { es: 'grocery-identification', en: 'grocery-identification' },
+    titles: { es: 'Grocery Identification', en: 'Grocery Identification' },
+    seo: {
+      es: {
+        title: 'Grocery Identification Microservice',
+        description: 'Near real-time inventory event processing microservice handling 10K-100K events daily',
+      },
+      en: {
+        title: 'Grocery Identification Microservice',
+        description: 'Near real-time inventory event processing microservice handling 10K-100K events daily',
+      },
+    },
+    sectionLabels: { es: {}, en: {} },
+    type: 'case-study',
+    component: () => import('./GroceryIdent').then(m => ({ default: m.default })),
+    ragReady: true,
+    seoMeta: {
+      datePublished: '2021-07-01',
+      dateModified: '2024-04-21',
+      keywords: ['microservices', 'event processing', 'AWS', 'inventory management', 'real-time systems'],
+      articleType: 'TechArticle',
+      articleTags: 'microservices,aws,event-processing,inventory',
+      images: [],
+      about: [{ name: 'Amazon Physical Stores' }],
+    },
+  },
+]
 
 export function getAltPaths(): Record<string, string> {
   const map: Record<string, string> = {
