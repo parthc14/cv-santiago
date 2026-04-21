@@ -1,6 +1,6 @@
 import { articleRegistry } from './registry'
 
-type Lang = 'es' | 'en'
+type Lang = 'en'
 
 interface JsonLdOptions {
   lang: Lang
@@ -48,7 +48,7 @@ const PERSON = {
   url: 'https://santifer.io',
   jobTitle: 'Head of Applied AI',
   sameAs: [
-    'https://www.linkedin.com/in/santifer',
+    'https://www.linkedin.com/in/parth-chitroda',
     'https://github.com/santifer',
     'https://x.com/santifer',
     'https://dev.to/santifer',
@@ -75,7 +75,7 @@ const WEBSITE = {
 }
 
 export function buildArticleJsonLd(opts: JsonLdOptions) {
-  const inLanguage = opts.lang === 'es' ? 'es' : 'en'
+  const inLanguage = 'en'
 
   const graph: Record<string, unknown>[] = [
     {

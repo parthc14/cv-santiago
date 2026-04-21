@@ -4,19 +4,11 @@ import { MapPin, Mail, ExternalLink, Award, GraduationCap, Briefcase, ChevronRig
 import { aboutContent, type AboutLang } from './about-i18n'
 
 const SOCIAL_LINKS = [
-  { name: 'LinkedIn', url: 'https://www.linkedin.com/in/santifer' },
-  { name: 'GitHub', url: 'https://github.com/santifer' },
-  { name: 'YouTube', url: 'https://www.youtube.com/@santifer_io' },
-  { name: 'X / Twitter', url: 'https://x.com/santifer' },
-  { name: 'Dev.to', url: 'https://dev.to/santifer' },
-  { name: 'Substack', url: 'https://santifer.substack.com' },
-  { name: 'Stack Overflow', url: 'https://stackoverflow.com/users/32541743' },
-  { name: 'ORCID', url: 'https://orcid.org/0009-0006-2192-7210' },
-  { name: 'Crunchbase', url: 'https://www.crunchbase.com/person/santiago-fernandez-de-valderrama' },
-  { name: 'Wikidata', url: 'https://www.wikidata.org/wiki/Q138710224' },
+  { name: 'LinkedIn', url: 'https://www.linkedin.com/in/parthchitroda' },
+  { name: 'GitHub', url: 'https://github.com/parthchitroda' },
 ]
 
-export default function AboutPage({ lang = 'es' }: { lang?: AboutLang }) {
+export default function AboutPage({ lang = 'en' }: { lang?: AboutLang }) {
   const t = aboutContent[lang]
   const altSlug = t.altSlug
 
@@ -96,7 +88,7 @@ export default function AboutPage({ lang = 'es' }: { lang?: AboutLang }) {
           foundingDate: '2009',
         },
         sameAs: [
-          'https://www.linkedin.com/in/santifer',
+          'https://www.linkedin.com/in/parth-chitroda',
           'https://github.com/santifer',
           'https://x.com/santifer',
           'https://dev.to/santifer',
@@ -267,7 +259,7 @@ export default function AboutPage({ lang = 'es' }: { lang?: AboutLang }) {
               <div key={cert.org} className="p-3 rounded-lg bg-card border border-border">
                 <p className="font-medium text-foreground text-sm mb-1">{cert.org}</p>
                 <div className="flex flex-wrap gap-1.5">
-                  {cert.items.map((item) => (
+                  {cert.items.map((item: any) => (
                     <span key={item} className="px-2 py-0.5 rounded text-xs bg-muted/30 text-muted-foreground">{item}</span>
                   ))}
                 </div>
@@ -390,14 +382,14 @@ export default function AboutPage({ lang = 'es' }: { lang?: AboutLang }) {
             to={`/${altSlug}`}
             className="text-sm text-muted-foreground hover:text-primary transition-colors"
           >
-            {lang === 'es' ? 'Read in English →' : 'Leer en Español →'}
+            {'Leer en Español →'}
           </Link>
         </div>
 
         {/* Footer */}
         <footer className="mt-8 text-center">
           <p className="text-xs text-muted-foreground">
-            &copy; {new Date().getFullYear()} Santiago Fernández de Valderrama. {lang === 'es' ? 'Todos los derechos reservados.' : 'All rights reserved.'}
+            &copy; {new Date().getFullYear()} Santiago Fernández de Valderrama. {'All rights reserved.'}
           </p>
         </footer>
       </main>
