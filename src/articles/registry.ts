@@ -60,6 +60,7 @@ export const articleRegistry: ArticleConfig[] = [
     type: 'case-study',
     component: () => import('./HAWK').then(m => ({ default: m.default })),
     ragReady: true,
+    i18nFile: 'src/hawk-i18n.ts',
     seoMeta: {
       datePublished: '2023-10-01',
       dateModified: '2024-04-21',
@@ -88,6 +89,7 @@ export const articleRegistry: ArticleConfig[] = [
     type: 'case-study',
     component: () => import('./GroceryIdent').then(m => ({ default: m.default })),
     ragReady: true,
+    i18nFile: 'src/grocery-ident-i18n.ts',
     seoMeta: {
       datePublished: '2021-07-01',
       dateModified: '2024-04-21',
