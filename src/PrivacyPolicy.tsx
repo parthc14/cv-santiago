@@ -6,12 +6,12 @@ const content = {
   es: {
     title: 'Politica de Privacidad',
     lastUpdated: 'Ultima actualizacion: 15 de marzo de 2026',
-    intro: 'Esta politica describe como se recopilan y utilizan los datos cuando visitas santifer.io.',
+    intro: 'Esta politica describe como se recopilan y utilizan los datos cuando visitas parthchitroda.com.',
     sections: [
       {
         heading: 'Que datos se recopilan',
         items: [
-          'Mensajes del chatbot: cuando interactuas con el chatbot "Santi", los mensajes se procesan para generar respuestas. No se solicita ni almacena informacion personal identificable.',
+          'Mensajes del chatbot: cuando interactuas con el chatbot de Parth, los mensajes se procesan para generar respuestas. No se solicita ni almacena informacion personal identificable.',
           'Audio del modo voz: si activas el modo voz, el audio se procesa en tiempo real para la conversacion y no se almacena de forma permanente.',
           'Analiticas de uso: se recopilan datos anonimos de navegacion (paginas visitadas, duracion, dispositivo) para mejorar el sitio.',
         ],
@@ -19,7 +19,7 @@ const content = {
       {
         heading: 'Como se utilizan los datos',
         items: [
-          'Los mensajes del chatbot se utilizan exclusivamente para generar respuestas contextuales sobre la experiencia profesional de Santiago.',
+          'Los mensajes del chatbot se utilizan exclusivamente para generar respuestas contextuales sobre la experiencia profesional de Parth.',
           'Las trazas de conversacion se almacenan de forma anonimizada para mejorar la calidad de las respuestas y detectar intentos de uso indebido.',
           'Los datos de analiticas se utilizan para entender patrones de uso y mejorar el rendimiento del sitio.',
         ],
@@ -44,7 +44,7 @@ const content = {
       {
         heading: 'Contacto',
         body: 'Para cualquier consulta sobre privacidad, puedes escribir a:',
-        email: 'hola@santifer.io',
+        email: 'hola@parthchitroda.com',
       },
     ],
     backHome: 'Volver al inicio',
@@ -52,12 +52,12 @@ const content = {
   en: {
     title: 'Privacy Policy',
     lastUpdated: 'Last updated: March 15, 2026',
-    intro: 'This policy describes how data is collected and used when you visit santifer.io.',
+    intro: 'This policy describes how data is collected and used when you visit parthchitroda.com.',
     sections: [
       {
         heading: 'What data is collected',
         items: [
-          'Chatbot messages: when you interact with the "Santi" chatbot, messages are processed to generate responses. No personally identifiable information is requested or stored.',
+          'Chatbot messages: when you interact with Parth chatbot, messages are processed to generate responses. No personally identifiable information is requested or stored.',
           'Voice mode audio: if you activate voice mode, audio is processed in real time for conversation and is not permanently stored.',
           'Usage analytics: anonymous browsing data (pages visited, duration, device) is collected to improve the site.',
         ],
@@ -65,7 +65,7 @@ const content = {
       {
         heading: 'How data is used',
         items: [
-          "Chatbot messages are used exclusively to generate contextual responses about Santiago's professional experience.",
+          "Chatbot messages are used exclusively to generate contextual responses about Parth's professional experience.",
           'Conversation traces are stored in anonymized form to improve response quality and detect misuse attempts.',
           'Analytics data is used to understand usage patterns and improve site performance.',
         ],
@@ -90,7 +90,7 @@ const content = {
       {
         heading: 'Contact',
         body: 'For any privacy-related inquiries, you can write to:',
-        email: 'hola@santifer.io',
+        email: 'hola@parthchitroda.com',
       },
     ],
     backHome: 'Back to home',
@@ -108,7 +108,7 @@ export default function PrivacyPolicy({ lang = 'es' }: { lang?: 'es' | 'en' }) {
   const t = content[lang]
 
   useEffect(() => {
-    document.title = `${t.title} | santifer.io`
+    document.title = `${t.title} | parthchitroda.com`
 
     // noindex
     let robots = document.querySelector('meta[name="robots"]') as HTMLMetaElement
@@ -121,13 +121,13 @@ export default function PrivacyPolicy({ lang = 'es' }: { lang?: 'es' | 'en' }) {
 
     // Fix canonical (SPA fallback serves homepage canonical — override it)
     let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement
-    if (canonical) canonical.href = `https://santifer.io/${'privacy'}`
+    if (canonical) canonical.href = `https://parthchitroda.com/${'privacy'}`
 
     // Fix meta description
     let desc = document.querySelector('meta[name="description"]') as HTMLMetaElement
     if (desc) desc.content = lang === 'es'
-      ? 'Politica de privacidad de santifer.io. Como se recopilan y utilizan los datos del chatbot y la web.'
-      : 'Privacy policy for santifer.io. How chatbot and website data is collected and used.'
+      ? 'Politica de privacidad de parthchitroda.com. Como se recopilan y utilizan los datos del chatbot y la web.'
+      : 'Privacy policy for parthchitroda.com. How chatbot and website data is collected and used.'
 
     return () => {
       robots.content = 'index, follow'
