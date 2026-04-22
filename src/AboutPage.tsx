@@ -10,7 +10,6 @@ const SOCIAL_LINKS = [
 
 export default function AboutPage({ lang = 'en' }: { lang?: AboutLang }) {
   const t = aboutContent[lang]
-  const altSlug = t.altSlug
 
   useEffect(() => {
     document.documentElement.lang = lang
@@ -282,16 +281,6 @@ export default function AboutPage({ lang = 'en' }: { lang?: AboutLang }) {
             ))}
           </div>
         </section>
-
-        {/* Language toggle */}
-        <div className="text-center pt-6 border-t border-border">
-          <Link
-            to={`/${altSlug}`}
-            className="text-sm text-muted-foreground hover:text-primary transition-colors"
-          >
-            {'Leer en Español →'}
-          </Link>
-        </div>
 
         {/* Footer */}
         <footer className="mt-8 text-center">
