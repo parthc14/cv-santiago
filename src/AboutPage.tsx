@@ -1,11 +1,11 @@
 import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { MapPin, Mail, ExternalLink, Award, GraduationCap, Briefcase, ChevronRight, Clock, Newspaper, HelpCircle, Users } from 'lucide-react'
+import { MapPin, Mail, ExternalLink, GraduationCap, Briefcase, ChevronRight, Clock } from 'lucide-react'
 import { aboutContent, type AboutLang } from './about-i18n'
 
 const SOCIAL_LINKS = [
-  { name: 'LinkedIn', url: 'https://www.linkedin.com/in/parthchitroda' },
-  { name: 'GitHub', url: 'https://github.com/parthchitroda' },
+  { name: 'LinkedIn', url: 'https://www.linkedin.com/in/parth-chitroda' },
+  { name: 'GitHub', url: 'https://github.com/parthc14' },
 ]
 
 export default function AboutPage({ lang = 'en' }: { lang?: AboutLang }) {
@@ -22,12 +22,11 @@ export default function AboutPage({ lang = 'en' }: { lang?: AboutLang }) {
 
     let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement
     if (!canonical) { canonical = document.createElement('link'); canonical.rel = 'canonical'; document.head.appendChild(canonical) }
-    canonical.href = `https://santifer.io/${t.slug}`
+    canonical.href = `https://parthchitroda.com/${t.slug}`
 
     const hreflangs = [
-      { lang: 'es', href: 'https://santifer.io/sobre-mi' },
-      { lang: 'en', href: 'https://santifer.io/about' },
-      { lang: 'x-default', href: 'https://santifer.io/sobre-mi' },
+      { lang: 'en', href: 'https://parthchitroda.com/about' },
+      { lang: 'x-default', href: 'https://parthchitroda.com/about' },
     ]
     document.querySelectorAll('link[hreflang]').forEach(el => el.remove())
     for (const hl of hreflangs) {
@@ -43,16 +42,15 @@ export default function AboutPage({ lang = 'en' }: { lang?: AboutLang }) {
     script.textContent = JSON.stringify({
       '@context': 'https://schema.org',
       '@type': 'ProfilePage',
-      dateModified: '2026-04-19',
+      dateModified: '2026-04-21',
       mainEntity: {
         '@type': 'Person',
-        '@id': 'https://santifer.io/#person',
-        name: 'Santiago Fernández de Valderrama Aparicio',
-        alternateName: ['Santiago Fernández de Valderrama', 'santifer', 'Santi'],
-        url: 'https://santifer.io',
-        image: 'https://santifer.io/foto-avatar.png',
-        email: 'hola@santifer.io',
-        jobTitle: ['Head of Applied AI', 'AI Product Manager', 'Solutions Architect (No/Low-Code & AI)', 'AI Forward Deployed Engineer'],
+        '@id': 'https://parthchitroda.com/#person',
+        name: 'Parth Chitroda',
+        url: 'https://parthchitroda.com',
+        image: 'https://parthchitroda.com/foto-avatar.png',
+        email: 'parthchitroda@gmail.com',
+        jobTitle: ['Software Development Engineer II', 'Systems Architect', 'AWS Specialist'],
         knowsAbout: [
           { '@type': 'Thing', name: 'Artificial Intelligence', url: 'https://en.wikipedia.org/wiki/Artificial_intelligence' },
           { '@type': 'Thing', name: 'Machine Learning', url: 'https://en.wikipedia.org/wiki/Machine_learning' },
@@ -89,21 +87,7 @@ export default function AboutPage({ lang = 'en' }: { lang?: AboutLang }) {
         },
         sameAs: [
           'https://www.linkedin.com/in/parth-chitroda',
-          'https://github.com/santifer',
-          'https://x.com/santifer',
-          'https://dev.to/santifer',
-          'https://santifer.substack.com',
-          'https://contentdigest.santifer.io',
-          'https://www.youtube.com/@santifer_io',
-          'https://stackoverflow.com/users/32541743',
-          'https://orcid.org/0009-0006-2192-7210',
-          'https://www.crunchbase.com/person/santiago-fernandez-de-valderrama',
-          'https://huggingface.co/santifer',
-          'https://www.wikidata.org/wiki/Q138710224',
-          'https://santiferirepair.es',
-          'https://www.facebook.com/santifer.io/',
-          'https://www.producthunt.com/@santifer',
-          'https://app.daily.dev/santifer',
+          'https://github.com/parthc14',
         ],
         subjectOf: {
           '@type': 'NewsArticle',
@@ -129,7 +113,7 @@ export default function AboutPage({ lang = 'en' }: { lang?: AboutLang }) {
     faqScript.textContent = JSON.stringify({
       '@context': 'https://schema.org',
       '@type': 'FAQPage',
-      '@id': `https://santifer.io/${t.slug}/#faq`,
+      '@id': `https://parthchitroda.com/${t.slug}/#faq`,
       inLanguage: lang,
       mainEntity: t.faq.map(item => ({
         '@type': 'Question',
@@ -152,10 +136,10 @@ export default function AboutPage({ lang = 'en' }: { lang?: AboutLang }) {
         {/* Header */}
         <header className="flex flex-col sm:flex-row items-center sm:items-start gap-6 mb-10">
           <img
-            src="/foto-avatar-sm.webp"
-            srcSet="/foto-avatar-sm.webp 192w, /foto-avatar.webp 384w"
+            src="/foto-avatar-sm.png"
+            srcSet="/foto-avatar-sm.png 192w, /foto-avatar.png 384w"
             sizes="96px"
-            alt="Santiago Fernández de Valderrama"
+            alt="Parth Chitroda"
             className="w-24 h-24 rounded-full border-2 border-border shadow-lg"
             width={96}
             height={96}
@@ -179,7 +163,7 @@ export default function AboutPage({ lang = 'en' }: { lang?: AboutLang }) {
         </header>
 
         {/* Manifesto */}
-        <blockquote cite="https://santifer.io/career-ops" className="mb-10 border-l-4 border-primary pl-6 pr-4 py-3 text-xl md:text-2xl italic font-display leading-snug text-foreground/90">
+        <blockquote cite="https://parthchitroda.com/career-ops" className="mb-10 border-l-4 border-primary pl-6 pr-4 py-3 text-xl md:text-2xl italic font-display leading-snug text-foreground/90">
           {t.manifesto}
         </blockquote>
 
@@ -214,12 +198,12 @@ export default function AboutPage({ lang = 'en' }: { lang?: AboutLang }) {
           </h2>
           <div className="space-y-3">
             {t.timeline.map((item) => (
-              <div key={item.period} className="flex gap-4 p-3 rounded-lg bg-card border border-border">
-                <span className="text-xs font-mono text-primary whitespace-nowrap pt-0.5">{item.period}</span>
-                <div>
-                  <p className="font-medium text-foreground text-sm">{item.role}</p>
-                  <p className="text-xs text-muted-foreground">{item.company} — {item.desc}</p>
-                </div>
+              <div key={item.period} className="p-4 rounded-lg bg-card border border-border">
+                <p className="flex items-baseline gap-3 mb-2">
+                  <span className="text-lg font-mono text-primary font-semibold whitespace-nowrap">{item.period}</span>
+                  <span className="font-medium text-foreground text-base">{item.role}</span>
+                </p>
+                <p className="text-sm text-muted-foreground leading-relaxed ml-24">{item.company} — {item.desc}</p>
               </div>
             ))}
           </div>
@@ -248,102 +232,25 @@ export default function AboutPage({ lang = 'en' }: { lang?: AboutLang }) {
           </div>
         </section>
 
-        {/* Certifications */}
-        <section className="mb-10">
-          <h2 className="font-display text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-            <Award className="w-4 h-4 text-primary" />
-            {t.certificationsHeading}
-          </h2>
-          <div className="space-y-3">
-            {t.certifications.map((cert) => (
-              <div key={cert.org} className="p-3 rounded-lg bg-card border border-border">
-                <p className="font-medium text-foreground text-sm mb-1">{cert.org}</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {cert.items.map((item: any) => (
-                    <span key={item} className="px-2 py-0.5 rounded text-xs bg-muted/30 text-muted-foreground">{item}</span>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
         {/* Education */}
         <section className="mb-10">
           <h2 className="font-display text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
             <GraduationCap className="w-4 h-4 text-primary" />
             {t.educationHeading}
           </h2>
-          <ul className="space-y-1.5">
+          <div className="space-y-3">
             {t.education.map((item) => (
-              <li key={item} className="text-sm text-muted-foreground">{item}</li>
-            ))}
-          </ul>
-        </section>
-
-        {/* Press */}
-        <section className="mb-10">
-          <h2 className="font-display text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-            <Newspaper className="w-4 h-4 text-primary" />
-            {t.pressHeading}
-          </h2>
-          {t.press.map((item) => (
-            <a
-              key={item.href}
-              href={item.href}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-3 p-3 rounded-lg bg-card border border-border hover:border-primary/30 transition-all group"
-            >
-              <div>
-                <p className="font-medium text-foreground text-sm group-hover:text-primary transition-colors">{item.title}</p>
-                <p className="text-xs text-muted-foreground">{item.publisher} · {item.date}</p>
-              </div>
-              <ExternalLink className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-            </a>
-          ))}
-        </section>
-
-        {/* Community */}
-        <section className="mb-10">
-          <h2 className="font-display text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-            <Users className="w-4 h-4 text-primary" />
-            {t.communityHeading}
-          </h2>
-          <div className="space-y-2">
-            {t.community.map((item) => (
-              <a
-                key={item.href}
-                href={item.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-between p-3 rounded-lg bg-card border border-border hover:border-primary/30 transition-all group"
-              >
-                <div>
-                  <p className="font-medium text-foreground text-sm group-hover:text-primary transition-colors">{item.title}</p>
-                  <p className="text-xs text-muted-foreground">{item.platform}</p>
-                </div>
-                <ExternalLink className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-              </a>
-            ))}
-          </div>
-        </section>
-
-        {/* FAQ */}
-        <section className="mb-10">
-          <h2 className="font-display text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-            <HelpCircle className="w-4 h-4 text-primary" />
-            {t.faqHeading}
-          </h2>
-          <div className="space-y-4">
-            {t.faq.map((item) => (
-              <div key={item.q} className="p-4 rounded-lg bg-card border border-border">
-                <p className="font-medium text-foreground text-sm mb-2">{item.q}</p>
-                <p className="text-sm text-muted-foreground leading-relaxed">{item.a}</p>
+              <div key={item.period} className="p-4 rounded-lg bg-card border border-border">
+                <p className="flex items-baseline gap-3 mb-2">
+                  <span className="text-lg font-mono text-primary font-semibold whitespace-nowrap">{item.period}</span>
+                  <span className="font-medium text-foreground text-base">{item.degree}</span>
+                </p>
+                <p className="text-sm text-muted-foreground leading-relaxed ml-24">{item.school}</p>
               </div>
             ))}
           </div>
         </section>
+
 
         {/* Connect */}
         <section className="mb-10">
@@ -389,7 +296,7 @@ export default function AboutPage({ lang = 'en' }: { lang?: AboutLang }) {
         {/* Footer */}
         <footer className="mt-8 text-center">
           <p className="text-xs text-muted-foreground">
-            &copy; {new Date().getFullYear()} Santiago Fernández de Valderrama. {'All rights reserved.'}
+            &copy; {new Date().getFullYear()} Parth Chitroda. {'All rights reserved.'}
           </p>
         </footer>
       </main>
