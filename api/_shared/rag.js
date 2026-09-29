@@ -2,13 +2,17 @@
 // Shared RAG pipeline — used by api/chat.js (text) and api/rag-search.js (voice)
 // ---------------------------------------------------------------------------
 
+import { qdrantSearch } from './qdrant.js'
+import { GROQ_MODEL } from './groq.js'
+
 // ---------------------------------------------------------------------------
 // Cost tracking per span
 // ---------------------------------------------------------------------------
 
 export const MODEL_COSTS = {
-  'claude-sonnet-4-6': { input: 3.0 / 1e6, output: 15.0 / 1e6 },
-  'claude-haiku-4-5-20251001': { input: 0.25 / 1e6, output: 1.25 / 1e6 },
+  // TODO: pull the real $/token rate from Groq's current pricing page —
+  // placeholder so cost dashboards don't error, not a billing source of truth.
+  'openai/gpt-oss-120b': { input: 0, output: 0 },
   'text-embedding-3-small': { input: 0.02 / 1e6 },
 }
 
@@ -18,25 +22,28 @@ export function calcCost(model, inputTokens, outputTokens = 0) {
 }
 
 // ---------------------------------------------------------------------------
-// RAG: tool definition for Agentic RAG
+// RAG: tool definition for Agentic RAG (OpenAI/Groq function-calling shape)
 // ---------------------------------------------------------------------------
 
 export function isRagEnabled() {
-  return !!(process.env.OPENAI_API_KEY && process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY)
+  return !!(process.env.OPENAI_API_KEY && process.env.QDRANT_URL && process.env.QDRANT_API_KEY)
 }
 
 export const PORTFOLIO_TOOL = {
-  name: 'search_portfolio',
-  description: "Search your own published case studies for project details. You wrote these articles — they are YOUR words about YOUR projects. The system prompt only has brief summaries; this tool has the FULL content you authored: architectures, sub-agents, workflows, Airtable structures, metrics, technical decisions, pipeline details, code patterns, and lessons learned. Use this whenever the user asks for specifics about any project. Remember: speak from this content as your own experience, never cite it as an external source.",
-  input_schema: {
-    type: 'object',
-    properties: {
-      query: {
-        type: 'string',
-        description: 'The search query to find relevant portfolio content',
+  type: 'function',
+  function: {
+    name: 'search_portfolio',
+    description: "Search your own published case studies for project details. You wrote these articles — they are YOUR words about YOUR projects. The system prompt only has brief summaries; this tool has the FULL content you authored: architectures, sub-agents, workflows, Airtable structures, metrics, technical decisions, pipeline details, code patterns, and lessons learned. Use this whenever the user asks for specifics about any project. Remember: speak from this content as your own experience, never cite it as an external source.",
+    parameters: {
+      type: 'object',
+      properties: {
+        query: {
+          type: 'string',
+          description: 'The search query to find relevant portfolio content',
+        },
       },
+      required: ['query'],
     },
-    required: ['query'],
   },
 }
 
@@ -71,61 +78,23 @@ export async function embedQuery(query) {
 }
 
 // ---------------------------------------------------------------------------
-// RAG: hybrid search via Supabase RPC (Edge-compatible)
+// RAG: dense-vector search via Qdrant (Edge-compatible)
 // ---------------------------------------------------------------------------
 
-export async function searchDocuments(queryText, queryEmbedding) {
+export async function searchDocuments(queryEmbedding) {
   const t0 = Date.now()
-
-  const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), 2000) // 2s timeout (cold start can be slow)
-
-  try {
-    const response = await fetch(
-      `${process.env.SUPABASE_URL}/rest/v1/rpc/hybrid_search`,
-      {
-        method: 'POST',
-        headers: {
-          'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY,
-          'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          query_text: queryText,
-          query_embedding: queryEmbedding,
-          match_count: 10,
-          semantic_weight: 0.7,
-          keyword_weight: 0.3,
-        }),
-        signal: controller.signal,
-      },
-    )
-
-    clearTimeout(timeout)
-
-    if (!response.ok) {
-      throw new Error(`Supabase search failed: ${response.status}`)
-    }
-
-    const chunks = await response.json()
-    return {
-      chunks,
-      latencyMs: Date.now() - t0,
-    }
-  } catch (err) {
-    clearTimeout(timeout)
-    if (err.name === 'AbortError') {
-      throw new Error('Supabase search timeout (>2s)')
-    }
-    throw err
+  const chunks = await qdrantSearch(queryEmbedding, 10)
+  return {
+    chunks,
+    latencyMs: Date.now() - t0,
   }
 }
 
 // ---------------------------------------------------------------------------
-// RAG: re-rank top-10 → top-3 with Haiku
+// RAG: re-rank top-10 → top-3 with Groq
 // ---------------------------------------------------------------------------
 
-export async function rerankChunks(query, chunks, anthropicClient) {
+export async function rerankChunks(query, chunks, groqClient) {
   if (chunks.length <= 3) return { chunks, latencyMs: 0, rerankedOrder: null, usage: null }
 
   const t0 = Date.now()
@@ -134,20 +103,21 @@ export async function rerankChunks(query, chunks, anthropicClient) {
       `[${i}] ${c.content.slice(0, 200)}`
     ).join('\n')
 
-    const response = await anthropicClient.messages.create({
-      model: 'claude-haiku-4-5-20251001',
+    const response = await groqClient.chat.completions.create({
+      model: GROQ_MODEL,
       max_tokens: 50,
+      reasoning_effort: 'low',
       messages: [{
         role: 'user',
         content: `Query: "${query}"\nRank these chunks by relevance. Return ONLY the top 5 IDs as comma-separated numbers (most relevant first):\n${numbered}`,
       }],
     })
 
-    const text = response.content[0]?.type === 'text' ? response.content[0].text : ''
+    const text = response.choices?.[0]?.message?.content || ''
     const ids = text.match(/\d+/g)?.map(Number).filter(n => n < chunks.length) || []
 
     const ranked = ids.slice(0, 5).map(i => chunks[i])
-    // Fill up to 5 if Haiku returned fewer
+    // Fill up to 5 if the model returned fewer
     while (ranked.length < 5 && ranked.length < chunks.length) {
       const next = chunks.find(c => !ranked.includes(c))
       if (next) ranked.push(next)
@@ -159,7 +129,7 @@ export async function rerankChunks(query, chunks, anthropicClient) {
 
     return {
       chunks: diversified, latencyMs: Date.now() - t0, rerankedOrder: ids.slice(0, 5),
-      usage: { input_tokens: response.usage?.input_tokens || 0, output_tokens: response.usage?.output_tokens || 0 },
+      usage: { input_tokens: response.usage?.prompt_tokens || 0, output_tokens: response.usage?.completion_tokens || 0 },
     }
   } catch {
     // Fallback: use original order with diversity
@@ -296,7 +266,7 @@ export function detectMentionedArticles(responseText) {
 // RAG: full agentic search pipeline
 // ---------------------------------------------------------------------------
 
-export async function searchPortfolio(query, trace, anthropicClient) {
+export async function searchPortfolio(query, trace, groqClient) {
   const result = {
     chunks: null,
     sources: [],
@@ -328,7 +298,7 @@ export async function searchPortfolio(query, trace, anthropicClient) {
   // 2. Retrieve
   const retrievalSpan = trace?.span({ name: 'retrieval', metadata: { query } })
   try {
-    const searchResult = await searchDocuments(query, embedding)
+    const searchResult = await searchDocuments(embedding)
     result.metrics.retrievalMs = searchResult.latencyMs
     retrievalSpan?.end({
       metadata: {
@@ -351,8 +321,8 @@ export async function searchPortfolio(query, trace, anthropicClient) {
     }
 
     // 3. Re-rank
-    const rerankGen = trace?.generation({ name: 'reranking', model: 'claude-haiku-4-5-20251001', metadata: { query } })
-    const rerankResult = await rerankChunks(query, filteredChunks, anthropicClient)
+    const rerankGen = trace?.generation({ name: 'reranking', model: GROQ_MODEL, metadata: { query } })
+    const rerankResult = await rerankChunks(query, filteredChunks, groqClient)
     result.metrics.rerankMs = rerankResult.latencyMs
     if (rerankResult.usage) {
       result.usage.rerankInputTokens = rerankResult.usage.input_tokens

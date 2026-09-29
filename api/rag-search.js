@@ -1,7 +1,7 @@
-import Anthropic from '@anthropic-ai/sdk'
 import { Langfuse } from 'langfuse'
+import { getGroqClient, GROQ_MODEL } from './_shared/groq.js'
 import {
-  searchPortfolio, formatChunksForContext, extractSources, calcCost,
+  searchPortfolio, formatChunksForContext, calcCost,
   filterSourcesByResponse, detectMentionedArticles, HOME_SOURCE,
 } from './_shared/rag.js'
 import { getSystemPrompt } from './_shared/prompt.js'
@@ -9,10 +9,6 @@ import { getSystemPrompt } from './_shared/prompt.js'
 export const config = {
   runtime: 'edge',
 }
-
-const client = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-})
 
 let langfuseClient = null
 function getLangfuse() {
@@ -27,54 +23,36 @@ function getLangfuse() {
 }
 
 // ---------------------------------------------------------------------------
-// Claude reasoning layer — turns raw RAG chunks into a verified answer
+// Groq reasoning layer — turns raw RAG chunks into a verified answer
 // ---------------------------------------------------------------------------
 
 const VOICE_OVERRIDE = `Respuesta para conversación hablada. Max 2-3 frases. Sin markdown ni links. Lenguaje natural hablado. Sé preciso con datos del contexto — nunca inventes. SIEMPRE habla en PRIMERA PERSONA como Santiago — nunca en tercera persona ("Santiago hizo..."), sino "Yo hice...", "Construí...", "Mi proyecto...".`
 
-async function reasonWithClaude(query, formattedChunks, span, langfuse) {
+async function reasonWithGroq(query, formattedChunks, span, langfuse) {
   const t0 = Date.now()
-  const reasoningSpan = span?.span({ name: 'claude-reasoning', metadata: { query } })
+  const reasoningSpan = span?.span({ name: 'groq-reasoning', metadata: { query } })
+  const groq = getGroqClient()
 
   try {
     const { text: systemPromptText } = await getSystemPrompt(langfuse)
 
     const response = await Promise.race([
-      client.messages.create({
-        model: 'claude-sonnet-4-6',
+      groq.chat.completions.create({
+        model: GROQ_MODEL,
         max_tokens: 300,
-        system: `${systemPromptText}\n\n${VOICE_OVERRIDE}`,
+        reasoning_effort: 'low',
         messages: [
-          { role: 'user', content: query },
-          {
-            role: 'assistant',
-            content: [{
-              type: 'tool_use',
-              id: 'voice_rag_call',
-              name: 'search_portfolio',
-              input: { query },
-            }],
-          },
-          {
-            role: 'user',
-            content: [{
-              type: 'tool_result',
-              tool_use_id: 'voice_rag_call',
-              content: formattedChunks,
-            }],
-          },
+          { role: 'system', content: `${systemPromptText}\n\n${VOICE_OVERRIDE}` },
+          { role: 'user', content: `${query}\n\nContext from your portfolio:\n${formattedChunks}` },
         ],
       }),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('Claude reasoning timeout (>3s)')), 3000)),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Groq reasoning timeout (>3s)')), 3000)),
     ])
 
-    const answer = response.content
-      .filter(b => b.type === 'text')
-      .map(b => b.text)
-      .join('')
+    const answer = response.choices?.[0]?.message?.content || ''
 
-    const inputTokens = response.usage?.input_tokens || 0
-    const outputTokens = response.usage?.output_tokens || 0
+    const inputTokens = response.usage?.prompt_tokens || 0
+    const outputTokens = response.usage?.completion_tokens || 0
     const latencyMs = Date.now() - t0
 
     reasoningSpan?.end({
@@ -82,7 +60,7 @@ async function reasonWithClaude(query, formattedChunks, span, langfuse) {
         inputTokens,
         outputTokens,
         latencyMs,
-        cost: calcCost('claude-sonnet-4-6', inputTokens, outputTokens),
+        cost: calcCost(GROQ_MODEL, inputTokens, outputTokens),
       },
     })
 
@@ -101,6 +79,8 @@ export default async function handler(req) {
   if (req.method !== 'POST') {
     return new Response('Method not allowed', { status: 405 })
   }
+
+  const groq = getGroqClient()
 
   try {
     const { query, traceId, currentPage } = await req.json()
@@ -130,7 +110,7 @@ export default async function handler(req) {
     const t0 = Date.now()
 
     try {
-      const ragResult = await searchPortfolio(query, ragSpan, client)
+      const ragResult = await searchPortfolio(query, ragSpan, groq)
 
       const formattedChunks = ragResult.chunks
         ? formatChunksForContext(ragResult.chunks)
@@ -146,14 +126,14 @@ export default async function handler(req) {
         },
       })
 
-      // Latency budget: skip Claude reasoning if RAG already took >1.5s
+      // Latency budget: skip Groq reasoning if RAG already took >1.5s
       const ragElapsedMs = Date.now() - t0
       const reasonedAnswer = (ragResult.chunks && ragElapsedMs <= 1500)
-        ? await reasonWithClaude(query, formattedChunks, trace, langfuse)
+        ? await reasonWithGroq(query, formattedChunks, trace, langfuse)
         : null
 
-      // Tier 1: Claude + RAG → reasoned answer
-      // Tier 2: RAG only (Claude failed) → raw chunks
+      // Tier 1: Groq + RAG → reasoned answer
+      // Tier 2: RAG only (Groq failed) → raw chunks
       // Tier 3: both failed → handled by catch below
       const context = reasonedAnswer || formattedChunks
 

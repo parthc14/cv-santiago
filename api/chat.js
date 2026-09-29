@@ -1,7 +1,7 @@
-import Anthropic from '@anthropic-ai/sdk'
 import { Langfuse } from 'langfuse'
 import { waitUntil } from '@vercel/functions'
 import SYSTEM_PROMPT_FALLBACK from '../chatbot-prompt.txt'
+import { getGroqClient, GROQ_MODEL } from './_shared/groq.js'
 import {
   calcCost, isRagEnabled, PORTFOLIO_TOOL, formatChunksForContext,
   searchPortfolio, filterSourcesByResponse, detectMentionedArticles,
@@ -9,10 +9,6 @@ import {
   containsFingerprint, LEAK_RESPONSE,
 } from './_shared/rag.js'
 import { getSystemPrompt } from './_shared/prompt.js'
-
-const client = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-})
 
 // ---------------------------------------------------------------------------
 // Langfuse
@@ -47,6 +43,7 @@ export default async function handler(req) {
 
   const langfuse = getLangfuse()
   let trace = null
+  const groq = getGroqClient()
 
   try {
     const { messages, lang, sessionId, currentPage } = await req.json()
@@ -124,17 +121,7 @@ export default async function handler(req) {
       ? `\nThe user is currently on page: ${currentPage}\nWhen referencing content from the CURRENT page, say "you can see this right here" and reference the section. When referencing OTHER articles, mention them by name.`
       : ''
 
-    const systemBlocks = [
-      {
-        type: 'text',
-        text: systemPromptText,
-        cache_control: { type: 'ephemeral' },
-      },
-      {
-        type: 'text',
-        text: langInstruction + pageContext,
-      },
-    ]
+    const systemContent = `${systemPromptText}\n\n${langInstruction}${pageContext}`
 
     const cleanMessages = messages.map(m => ({ role: m.role, content: m.content }))
 
@@ -151,67 +138,64 @@ export default async function handler(req) {
     const ragEnabled = isRagEnabled()
 
     if (ragEnabled) {
-      // First call: let Claude decide if it needs to search (non-streaming)
+      // First call: let the model decide if it needs to search (non-streaming)
       const toolDecisionSpan = trace?.span({ name: 'tool_decision' })
       const td0 = Date.now()
 
-      const firstResponse = await client.messages.create({
-        model: 'claude-sonnet-4-6',
+      const firstResponse = await groq.chat.completions.create({
+        model: GROQ_MODEL,
         max_tokens: 300,
-        system: systemBlocks,
-        messages: cleanMessages,
+        reasoning_effort: 'low',
+        messages: [{ role: 'system', content: systemContent }, ...cleanMessages],
         tools: [PORTFOLIO_TOOL],
       })
 
       const toolDecisionMs = Date.now() - td0
-      const tdInputTokens = firstResponse.usage?.input_tokens || 0
-      const tdOutputTokens = firstResponse.usage?.output_tokens || 0
+      const tdInputTokens = firstResponse.usage?.prompt_tokens || 0
+      const tdOutputTokens = firstResponse.usage?.completion_tokens || 0
+      const firstChoice = firstResponse.choices[0]
+      const toolCalls = firstChoice.message.tool_calls
       toolDecisionSpan?.end({
         metadata: {
-          stopReason: firstResponse.stop_reason,
-          toolUsed: firstResponse.stop_reason === 'tool_use',
+          finishReason: firstChoice.finish_reason,
+          toolUsed: firstChoice.finish_reason === 'tool_calls',
           inputTokens: tdInputTokens,
           outputTokens: tdOutputTokens,
           latencyMs: toolDecisionMs,
-          cost: calcCost('claude-sonnet-4-6', tdInputTokens, tdOutputTokens),
+          cost: calcCost(GROQ_MODEL, tdInputTokens, tdOutputTokens),
         },
       })
 
-      if (firstResponse.stop_reason === 'tool_use') {
+      if (firstChoice.finish_reason === 'tool_calls' && toolCalls?.length) {
         ragUsed = true
-        const toolUseBlock = firstResponse.content.find(b => b.type === 'tool_use')
-        const searchQuery = toolUseBlock?.input?.query || lastUserMessage
+        const toolUseBlock = toolCalls[0]
+        let searchQuery = lastUserMessage
+        try {
+          searchQuery = JSON.parse(toolUseBlock.function.arguments)?.query || lastUserMessage
+        } catch { /* malformed args — fall back to the raw user message */ }
 
         // Execute RAG pipeline
-        const ragResult = await searchPortfolio(searchQuery, trace, client)
+        const ragResult = await searchPortfolio(searchQuery, trace, groq)
         ragSources = ragResult.sources
         ragDegraded = ragResult.degraded
         ragDegradedReason = ragResult.degradedReason
         ragMetrics = ragResult.metrics
 
-        // Build tool_result and make second call (streaming)
+        // Build tool result and make second call (streaming)
         const toolResultContent = ragResult.chunks
           ? formatChunksForContext(ragResult.chunks)
           : 'No relevant content found in portfolio articles. You MUST NOT fabricate project details. Say you don\'t have that information and suggest contacting Santiago directly.'
 
         const messagesWithTool = [
           ...cleanMessages,
-          { role: 'assistant', content: firstResponse.content },
-          {
-            role: 'user',
-            content: [{
-              type: 'tool_result',
-              tool_use_id: toolUseBlock.id,
-              content: toolResultContent,
-            }],
-          },
+          { role: 'assistant', content: firstChoice.message.content || null, tool_calls: toolCalls },
+          { role: 'tool', tool_call_id: toolUseBlock.id, content: toolResultContent },
         ]
 
         // Stream the final response (with fallback if streaming fails)
         return streamResponse({
-          systemBlocks,
+          systemContent,
           messages: messagesWithTool,
-          tools: null,
           ragSources,
           ragDegraded,
           ragDegradedReason,
@@ -233,11 +217,10 @@ export default async function handler(req) {
         })
       }
 
-      // Claude didn't use tool — stream the response we already have
+      // No tool call — stream the response we already have
       return streamResponse({
-        systemBlocks,
+        systemContent,
         messages: cleanMessages,
-        tools: null,
         ragSources: [],
         ragDegraded: false,
         ragDegradedReason: null,
@@ -253,7 +236,8 @@ export default async function handler(req) {
         toolDecisionMs,
         tdInputTokens,
         tdOutputTokens,
-        precomputedResponse: firstResponse,
+        precomputedText: firstChoice.message.content || '',
+        precomputedUsage: { input_tokens: tdInputTokens, output_tokens: tdOutputTokens },
         lang,
         promptVersion,
       })
@@ -261,9 +245,8 @@ export default async function handler(req) {
 
     // RAG not enabled — direct streaming (original behavior)
     return streamResponse({
-      systemBlocks,
+      systemContent,
       messages: cleanMessages,
-      tools: null,
       ragSources: [],
       ragDegraded: false,
       ragDegradedReason: null,
@@ -294,37 +277,27 @@ export default async function handler(req) {
 }
 
 // ---------------------------------------------------------------------------
-// Stream a Claude response with SSE (for tool_result follow-up or no-RAG)
+// Stream a Groq response with SSE (for tool_result follow-up or no-RAG)
 // ---------------------------------------------------------------------------
 
 function streamResponse({
-  systemBlocks, messages, tools, ragSources, ragDegraded, ragDegradedReason,
+  systemContent, messages, ragSources, ragDegraded, ragDegradedReason,
   canary, intentTags, trace, langfuse, lastUserMessage, t0,
   ragUsed, ragMetrics, ragUsage, toolDecisionMs, tdInputTokens, tdOutputTokens,
-  precomputedResponse, lang, fallbackMessages, promptVersion,
+  precomputedText, precomputedUsage, lang, fallbackMessages, promptVersion,
 }) {
   const encoder = new TextEncoder()
+  const groq = getGroqClient()
   let fullOutput = ''
   let leakDetected = false
   let generationCost = 0
 
   const generationSpan = trace?.span({
     name: 'generation',
-    metadata: { ragUsed, streaming: !precomputedResponse },
+    metadata: { ragUsed, streaming: precomputedText === undefined },
   })
 
-  // Only create API stream when there's no precomputed response
-  let stream = null
-  if (!precomputedResponse) {
-    const streamParams = {
-      model: 'claude-sonnet-4-6',
-      max_tokens: 800,
-      system: systemBlocks,
-      messages,
-    }
-    if (tools) streamParams.tools = tools
-    stream = client.messages.stream(streamParams)
-  }
+  const requestMessages = [{ role: 'system', content: systemContent }, ...messages]
 
   const readableStream = new ReadableStream({
     async start(controller) {
@@ -334,11 +307,7 @@ function streamResponse({
           controller.enqueue(encoder.encode(`event: rag-status\ndata: ${JSON.stringify({ status: 'degraded', reason: ragDegradedReason })}\n\n`))
         }
 
-        if (precomputedResponse) {
-          // Drip precomputed text through the stream
-          const textBlocks = precomputedResponse.content.filter(b => b.type === 'text')
-          const precomputedText = textBlocks.map(b => b.text).join('')
-
+        if (precomputedText !== undefined) {
           // Check for leaks
           if (containsFingerprint(precomputedText) || precomputedText.includes(canary)) {
             trace?.update({
@@ -372,41 +341,47 @@ function streamResponse({
             await new Promise(r => setTimeout(r, delay))
           }
 
-          const pcIn = precomputedResponse.usage?.input_tokens || 0
-          const pcOut = precomputedResponse.usage?.output_tokens || 0
-          generationCost = calcCost('claude-sonnet-4-6', pcIn, pcOut)
+          generationCost = calcCost(GROQ_MODEL, precomputedUsage?.input_tokens || 0, precomputedUsage?.output_tokens || 0)
           generationSpan?.end({
             metadata: {
-              outputTokens: pcOut,
-              inputTokens: pcIn,
+              outputTokens: precomputedUsage?.output_tokens || 0,
+              inputTokens: precomputedUsage?.input_tokens || 0,
               latencyMs: Date.now() - t0,
               cost: generationCost,
             },
           })
         } else {
-          // Real-time streaming from Claude API (with retry)
+          // Real-time streaming from Groq (with retry)
           const MAX_RETRIES = 1
           let lastStreamError = null
 
           for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
             fullOutput = ''
+            let genIn = 0
+            let genOut = 0
             try {
-              // Create fresh stream for each attempt
-              const activeStream = attempt === 0 ? stream : client.messages.stream({
-                model: 'claude-sonnet-4-6',
+              const activeStream = await groq.chat.completions.create({
+                model: GROQ_MODEL,
                 max_tokens: 800,
-                system: systemBlocks,
-                messages,
+                reasoning_effort: 'low',
+                stream: true,
+                stream_options: { include_usage: true },
+                messages: requestMessages,
               })
 
-              for await (const event of activeStream) {
+              for await (const chunk of activeStream) {
                 if (leakDetected) break
 
-                if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
-                  const chunk = event.delta.text
-                  fullOutput += chunk
+                if (chunk.usage) {
+                  genIn = chunk.usage.prompt_tokens || 0
+                  genOut = chunk.usage.completion_tokens || 0
+                }
 
-                  if (fullOutput.length % 200 < chunk.length || fullOutput.length < 200) {
+                const delta = chunk.choices?.[0]?.delta?.content
+                if (delta) {
+                  fullOutput += delta
+
+                  if (fullOutput.length % 200 < delta.length || fullOutput.length < 200) {
                     if (containsFingerprint(fullOutput) || fullOutput.includes(canary)) {
                       leakDetected = true
                       trace?.update({
@@ -423,15 +398,12 @@ function streamResponse({
                     }
                   }
 
-                  controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text: chunk })}\n\n`))
+                  controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text: delta })}\n\n`))
                 }
               }
 
               if (!leakDetected) {
-                const finalMessage = await activeStream.finalMessage()
-                const genIn = finalMessage.usage?.input_tokens || 0
-                const genOut = finalMessage.usage?.output_tokens || 0
-                generationCost = calcCost('claude-sonnet-4-6', genIn, genOut)
+                generationCost = calcCost(GROQ_MODEL, genIn, genOut)
                 generationSpan?.end({
                   metadata: {
                     outputTokens: genOut,
@@ -470,9 +442,9 @@ function streamResponse({
         if (!leakDetected) {
           // Calculate total cost across all spans
           const costBreakdown = {
-            toolDecision: calcCost('claude-sonnet-4-6', tdInputTokens || 0, tdOutputTokens || 0),
+            toolDecision: calcCost(GROQ_MODEL, tdInputTokens || 0, tdOutputTokens || 0),
             embedding: calcCost('text-embedding-3-small', ragUsage?.embeddingTokens || 0),
-            reranking: calcCost('claude-haiku-4-5-20251001', ragUsage?.rerankInputTokens || 0, ragUsage?.rerankOutputTokens || 0),
+            reranking: calcCost(GROQ_MODEL, ragUsage?.rerankInputTokens || 0, ragUsage?.rerankOutputTokens || 0),
             generation: generationCost,
           }
           costBreakdown.total = Object.values(costBreakdown).reduce((a, b) => a + b, 0)
@@ -538,11 +510,12 @@ function streamResponse({
         // Graceful degradation: retry without RAG context (just system prompt)
         if (fallbackMessages && !fullOutput) {
           try {
-            const fallbackStream = client.messages.stream({
-              model: 'claude-sonnet-4-6',
+            const fallbackStream = await groq.chat.completions.create({
+              model: GROQ_MODEL,
               max_tokens: 800,
-              system: systemBlocks,
-              messages: fallbackMessages,
+              reasoning_effort: 'low',
+              stream: true,
+              messages: [{ role: 'system', content: systemContent }, ...fallbackMessages],
             })
 
             // Send degraded status so frontend knows RAG failed
@@ -551,15 +524,15 @@ function streamResponse({
             let fallbackOutput = ''
             let fallbackLeakDetected = false
 
-            for await (const event of fallbackStream) {
+            for await (const chunk of fallbackStream) {
               if (fallbackLeakDetected) break
 
-              if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
-                const chunk = event.delta.text
-                fallbackOutput += chunk
+              const delta = chunk.choices?.[0]?.delta?.content
+              if (delta) {
+                fallbackOutput += delta
 
                 // Fingerprint + canary check (same as main stream)
-                if (fallbackOutput.length % 200 < chunk.length || fallbackOutput.length < 200) {
+                if (fallbackOutput.length % 200 < delta.length || fallbackOutput.length < 200) {
                   if (containsFingerprint(fallbackOutput) || fallbackOutput.includes(canary)) {
                     fallbackLeakDetected = true
                     trace?.update({
@@ -575,7 +548,7 @@ function streamResponse({
                   }
                 }
 
-                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text: chunk })}\n\n`))
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text: delta })}\n\n`))
               }
             }
 
@@ -613,21 +586,23 @@ function streamResponse({
 }
 
 // ---------------------------------------------------------------------------
-// Online Scoring — Claude Haiku scores every response in real-time (Block 2)
+// Online Scoring — a cheap Groq call scores every response in real-time (Block 2)
 // Zero added latency: runs after response is sent via waitUntil()
 // ---------------------------------------------------------------------------
 
 async function scoreTrace(traceId, userMessage, response, ragUsed, langfuse) {
   try {
+    const groq = getGroqClient()
     const scoringGen = langfuse.generation({
       traceId,
       name: 'online_scoring',
-      model: 'claude-haiku-4-5-20251001',
+      model: GROQ_MODEL,
     })
 
-    const scoringResponse = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
+    const scoringResponse = await groq.chat.completions.create({
+      model: GROQ_MODEL,
       max_tokens: 200,
+      reasoning_effort: 'low',
       messages: [{
         role: 'user',
         content: `Rate this chatbot response (Santiago's CV chatbot). Respond ONLY with JSON.
@@ -644,13 +619,13 @@ JSON only: {"quality":0.0,"safety":0.0${ragUsed ? ',"faithfulness":0.0' : ''}}`
       }],
     })
 
-    const scIn = scoringResponse.usage?.input_tokens || 0
-    const scOut = scoringResponse.usage?.output_tokens || 0
+    const scIn = scoringResponse.usage?.prompt_tokens || 0
+    const scOut = scoringResponse.usage?.completion_tokens || 0
     scoringGen.end({
       usage: { input: scIn, output: scOut },
     })
 
-    const text = scoringResponse.content[0]?.type === 'text' ? scoringResponse.content[0].text : ''
+    const text = scoringResponse.choices?.[0]?.message?.content || ''
     const jsonMatch = text.match(/\{[\s\S]*\}/)
     if (!jsonMatch) return
 

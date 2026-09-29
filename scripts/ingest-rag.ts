@@ -1,16 +1,16 @@
 /**
- * RAG Ingestion: embed chunks and upsert to Supabase pgvector.
+ * RAG Ingestion: embed chunks and upsert to Qdrant.
  *
  * Features:
  *   - Change detection via content hashing (skip unchanged articles)
  *   - Chunk splitting for large sections (1000 chars, 200 overlap)
- *   - Contextual retrieval: prepend summary via Haiku before embedding
+ *   - Contextual retrieval: prepend summary via Groq before embedding
  *   - OpenAI text-embedding-3-small for embeddings (1536 dims)
- *   - Upsert to Supabase `documents` table
+ *   - Upsert to Qdrant `portfolio_chunks` collection
  *
  * Requires env vars:
- *   OPENAI_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
- *   ANTHROPIC_API_KEY (optional, for contextual retrieval)
+ *   OPENAI_API_KEY, QDRANT_URL, QDRANT_API_KEY
+ *   GROQ_API_KEY_NEW (optional, for contextual retrieval)
  *
  * Usage:
  *   npx tsx --tsconfig tsconfig.app.json scripts/ingest-rag.ts
@@ -25,9 +25,12 @@ import { resolve, dirname, basename } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createHash } from 'node:crypto'
 import OpenAI from 'openai'
-import { createClient } from '@supabase/supabase-js'
-import Anthropic from '@anthropic-ai/sdk'
 import { articleRegistry } from '../src/articles/registry.ts'
+import { getGroqClient, GROQ_MODEL } from '../api/_shared/groq.js'
+import {
+  qdrantEnsureCollection, qdrantUpsert, qdrantDeleteByArticle,
+  qdrantGetHashes, qdrantSaveHashes, qdrantDeleteHash,
+} from '../api/_shared/qdrant.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const root = resolve(__dirname, '..')
@@ -54,16 +57,9 @@ function getOpenAI(): OpenAI {
   return new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 }
 
-function getSupabase() {
-  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    throw new Error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required')
-  }
-  return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
-}
-
-function getAnthropic(): Anthropic | null {
-  if (!process.env.ANTHROPIC_API_KEY) return null
-  return new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+function getGroq(): OpenAI | null {
+  if (!process.env.GROQ_API_KEY_NEW) return null
+  return getGroqClient()
 }
 
 // ---------------------------------------------------------------------------
@@ -100,33 +96,22 @@ function loadHashesFromFile(): Record<string, string> {
   return {}
 }
 
-async function loadHashesFromSupabase(supabase: ReturnType<typeof createClient>): Promise<Record<string, string>> {
+async function loadHashes(): Promise<Record<string, string>> {
+  // Local file takes priority (faster), fallback to Qdrant (for CI/Vercel)
+  const local = loadHashesFromFile()
+  if (Object.keys(local).length > 0) return local
+  console.log('  ℹ️  No local hashes — checking Qdrant...')
   try {
-    const { data, error } = await supabase
-      .from('rag_hashes')
-      .select('article_id, hash')
-    if (error || !data) return {}
-    const hashes: Record<string, string> = {}
-    for (const row of data) hashes[row.article_id] = row.hash
-    return hashes
+    return await qdrantGetHashes()
   } catch { return {} }
 }
 
-async function loadHashes(supabase: ReturnType<typeof createClient>): Promise<Record<string, string>> {
-  // Local file takes priority (faster), fallback to Supabase (for CI/Vercel)
-  const local = loadHashesFromFile()
-  if (Object.keys(local).length > 0) return local
-  console.log('  ℹ️  No local hashes — checking Supabase...')
-  return loadHashesFromSupabase(supabase)
-}
-
-async function saveHashes(hashes: Record<string, string>, supabase: ReturnType<typeof createClient>) {
+async function saveHashes(hashes: Record<string, string>) {
   // Save locally
   writeFileSync(HASHES_FILE, JSON.stringify(hashes, null, 2))
-  // Save to Supabase (for CI/Vercel where local file doesn't persist)
+  // Save to Qdrant (for CI/Vercel where the local file doesn't persist)
   try {
-    const rows = Object.entries(hashes).map(([article_id, hash]) => ({ article_id, hash }))
-    await supabase.from('rag_hashes').upsert(rows, { onConflict: 'article_id' })
+    await qdrantSaveHashes(hashes)
   } catch { /* non-critical */ }
 }
 
@@ -174,16 +159,16 @@ function splitChunk(chunk: Chunk): Chunk[] {
 }
 
 // ---------------------------------------------------------------------------
-// Contextual retrieval: prepend summary via Haiku
+// Contextual retrieval: prepend summary via Groq
 // ---------------------------------------------------------------------------
 
 async function addContextualSummaries(
   chunks: Chunk[],
   articleTitle: string,
-  anthropic: Anthropic | null,
+  groq: OpenAI | null,
 ): Promise<string[]> {
-  if (!anthropic) {
-    console.log('    (no ANTHROPIC_API_KEY — skipping contextual retrieval)')
+  if (!groq) {
+    console.log('    (no GROQ_API_KEY_NEW — skipping contextual retrieval)')
     return chunks.map(c => c.content)
   }
 
@@ -191,16 +176,17 @@ async function addContextualSummaries(
 
   for (const chunk of chunks) {
     try {
-      const response = await anthropic.messages.create({
-        model: 'claude-haiku-4-5-20251001',
+      const response = await groq.chat.completions.create({
+        model: GROQ_MODEL,
         max_tokens: 100,
+        reasoning_effort: 'low',
         messages: [{
           role: 'user',
           content: `This chunk is from the article "${articleTitle}", section "${chunk.metadata.section_id}". Give a 1-2 sentence context summary that would help retrieve this chunk when relevant. Be specific about what information this chunk contains.\n\nChunk:\n${chunk.content.slice(0, 500)}`,
         }],
       })
 
-      const summary = response.content[0].type === 'text' ? response.content[0].text : ''
+      const summary = response.choices?.[0]?.message?.content || ''
       enriched.push(`${summary}\n\n${chunk.content}`)
     } catch {
       // Fallback: use content without summary
@@ -233,39 +219,19 @@ async function embedTexts(texts: string[], openai: OpenAI): Promise<number[][]> 
 }
 
 // ---------------------------------------------------------------------------
-// Supabase operations
+// Qdrant operations
 // ---------------------------------------------------------------------------
 
-async function deleteArticleChunks(supabase: ReturnType<typeof createClient>, articleId: string) {
-  const { error } = await supabase.rpc('delete_documents_by_slug', { slug: articleId })
-  if (error) {
-    // Fallback: direct delete
-    const { error: directError } = await supabase
-      .from('documents')
-      .delete()
-      .eq('metadata->>article_id', articleId)
-    if (directError) throw directError
-  }
-}
-
 async function insertChunks(
-  supabase: ReturnType<typeof createClient>,
   chunks: Chunk[],
   embeddings: number[][],
   enrichedTexts: string[],
 ) {
-  const rows = chunks.map((chunk, i) => ({
+  const upsertChunks = chunks.map((chunk, i) => ({
     content: enrichedTexts[i],
     metadata: chunk.metadata,
-    embedding: embeddings[i],
   }))
-
-  // Insert in batches of 50
-  for (let i = 0; i < rows.length; i += 50) {
-    const batch = rows.slice(i, i + 50)
-    const { error } = await supabase.from('documents').insert(batch)
-    if (error) throw error
-  }
+  await qdrantUpsert(upsertChunks, embeddings)
 }
 
 // ---------------------------------------------------------------------------
@@ -276,17 +242,18 @@ async function main() {
   console.log('🔄 RAG Ingestion starting...\n')
 
   // Check for env vars
-  if (!process.env.OPENAI_API_KEY || !process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    console.log('⚠️  Missing env vars (OPENAI_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)')
+  if (!process.env.OPENAI_API_KEY || !process.env.QDRANT_URL || !process.env.QDRANT_API_KEY) {
+    console.log('⚠️  Missing env vars (OPENAI_API_KEY, QDRANT_URL, QDRANT_API_KEY)')
     console.log('   Skipping RAG ingestion. Set env vars to enable.\n')
     process.exit(0) // Exit gracefully so build continues
   }
 
   const openai = getOpenAI()
-  const supabase = getSupabase()
-  const anthropic = getAnthropic()
+  const groq = getGroq()
 
-  const hashes = await loadHashes(supabase)
+  await qdrantEnsureCollection()
+
+  const hashes = await loadHashes()
   const newHashes = { ...hashes }
 
   // Read all chunk files
@@ -331,39 +298,40 @@ async function main() {
 
     // Contextual retrieval summaries
     const articleTitle = article?.titles.en || articleId
-    const enrichedTexts = await addContextualSummaries(splitChunks, articleTitle, anthropic)
+    const enrichedTexts = await addContextualSummaries(splitChunks, articleTitle, groq)
 
     // Embed
     console.log(`     → Embedding ${enrichedTexts.length} chunks...`)
     const embeddings = await embedTexts(enrichedTexts, openai)
 
     // Delete old + insert new
-    console.log(`     → Upserting to Supabase...`)
-    await deleteArticleChunks(supabase, articleId)
-    await insertChunks(supabase, splitChunks, embeddings, enrichedTexts)
+    console.log(`     → Upserting to Qdrant...`)
+    await qdrantDeleteByArticle(articleId)
+    await insertChunks(splitChunks, embeddings, enrichedTexts)
 
     newHashes[articleId] = hash
     totalIngested += splitChunks.length
     console.log(`  ✅ ${articleId} — ${splitChunks.length} chunks ingested`)
   }
 
-  // Cleanup: remove articles from Supabase that no longer have chunk files
+  // Cleanup: remove articles from Qdrant that no longer have chunk files
   const activeArticleIds = new Set(chunkFiles.map(f => basename(f, '.json')))
   for (const articleId of Object.keys(newHashes)) {
     if (!activeArticleIds.has(articleId)) {
       console.log(`  🗑  ${articleId} — removed from index (no chunk file)`)
-      await deleteArticleChunks(supabase, articleId)
+      await qdrantDeleteByArticle(articleId)
+      await qdrantDeleteHash(articleId).catch(() => {})
       delete newHashes[articleId]
     }
   }
 
-  await saveHashes(newHashes, supabase)
+  await saveHashes(newHashes)
 
   console.log(`\n✅ Ingestion complete: ${totalIngested} ingested, ${totalSkipped} skipped`)
 }
 
 main().catch(err => {
-  // Runtime errors from third-party services (OpenAI quota, Supabase outage,
+  // Runtime errors from third-party services (OpenAI quota, Qdrant outage,
   // network hiccups) must NOT block the web deploy. Config errors throw early
   // (before main() runs) so by this point we're past validation and any error
   // is operational — log it loudly and exit 0 so the rest of the build
