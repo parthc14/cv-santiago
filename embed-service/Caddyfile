@@ -1,3 +1,0 @@
-embed.ctrlaltparth.tech {
-    reverse_proxy embed:8000
-}

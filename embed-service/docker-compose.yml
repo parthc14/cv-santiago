@@ -6,20 +6,15 @@ services:
       - .env
     expose:
       - "8000"
+    networks:
+      - n8n_default
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.embed.rule=Host(`embed.ctrlaltparth.tech`)"
+      - "traefik.http.routers.embed.entrypoints=websecure"
+      - "traefik.http.routers.embed.tls.certresolver=mytlschallenge"
+      - "traefik.http.services.embed.loadbalancer.server.port=8000"
 
-  caddy:
-    image: caddy:2-alpine
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
-    depends_on:
-      - embed
-
-volumes:
-  caddy_data:
-  caddy_config:
+networks:
+  n8n_default:
+    external: true
