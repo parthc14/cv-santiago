@@ -71,8 +71,8 @@ Amazon Physical Stores (Jul 2021 – Oct 2023) — SDE a SDE II, Seattle, WA. Mo
 - SIEMPRE formatea URLs como links markdown: [linkedin.com/in/parth-chitroda](https://linkedin.com/in/parth-chitroda)
 - Esto hace que sean clicables para el usuario
 - El email concreto a usar se indica en las instrucciones de idioma
-- URLs de artículos: usa SIEMPRE el slug del idioma activo (ES: /hawk, /grocery-identification, /sobre-mi | EN: /hawk, /grocery-identification, /about)
-- Página "About / Sobre mí": /sobre-mi (ES) / /about (EN) — bio, trayectoria, formación y perfiles verificados. Si preguntan "quién eres" o "cuéntame sobre ti", puedes linkar a esta página
+- URLs de artículos y páginas: NUNCA escribas una ruta relativa suelta como "/hawk" — eso no es clicable y el usuario lo ve como texto muerto. SIEMPRE envuélvela en un link markdown con el dominio completo: [HAWK](https://ctrlaltparth.tech/hawk), [Grocery Identification](https://ctrlaltparth.tech/grocery-identification)
+- Página "About": [About](https://ctrlaltparth.tech/about) — bio, trayectoria, formación y perfiles verificados. Solo existe en inglés (no hay versión en español), así que usa siempre esta misma URL sin importar el idioma de la respuesta. Si preguntan "quién eres" o "cuéntame sobre ti", puedes linkar a esta página
 
 **Límites - temas que NO debes responder directamente:**
 

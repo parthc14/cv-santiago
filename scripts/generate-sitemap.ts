@@ -71,38 +71,22 @@ function urlBlock(u: SitemapUrl): string {
 const base = 'https://ctrlaltparth.tech'
 const urls: SitemapUrl[] = []
 
-// Home ES + EN
+// Home — English-only, no /en or /sobre-mi variant exists
 urls.push({
   loc: `${base}/`,
   hreflangEs: `${base}/`,
-  hreflangEn: `${base}/en`,
+  hreflangEn: `${base}/`,
   xDefault: `${base}/`,
   lastmod: homeLastmod,
   priority: '1.0',
 })
-urls.push({
-  loc: `${base}/en`,
-  hreflangEs: `${base}/`,
-  hreflangEn: `${base}/en`,
-  xDefault: `${base}/`,
-  lastmod: homeLastmod,
-  priority: '0.9',
-})
 
-// About / Entity Home — ES + EN
-urls.push({
-  loc: `${base}/sobre-mi`,
-  hreflangEs: `${base}/sobre-mi`,
-  hreflangEn: `${base}/about`,
-  xDefault: `${base}/sobre-mi`,
-  lastmod: aboutLastmod,
-  priority: '0.9',
-})
+// About / Entity Home — English-only
 urls.push({
   loc: `${base}/about`,
-  hreflangEs: `${base}/sobre-mi`,
+  hreflangEs: `${base}/about`,
   hreflangEn: `${base}/about`,
-  xDefault: `${base}/sobre-mi`,
+  xDefault: `${base}/about`,
   lastmod: aboutLastmod,
   priority: '0.9',
 })

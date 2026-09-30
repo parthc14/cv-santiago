@@ -1,4 +1,3 @@
-import { articleRegistry } from './registry'
 import { PROFILE, SAME_AS } from '../profile-data'
 
 type Lang = 'en'
@@ -123,54 +122,4 @@ export function buildArticleJsonLd(opts: JsonLdOptions) {
     '@context': 'https://schema.org',
     '@graph': graph,
   }
-}
-
-/**
- * Build JSON-LD for an article using registry as single source of truth.
- * Components call this instead of buildArticleJsonLd directly, ensuring
- * client-side schema matches prerendered schema (fixes hydration divergence).
- */
-export function buildJsonLdFromRegistry(
-  articleId: string,
-  lang: Lang,
-  i18n: {
-    header: { h1: string }
-    seo: { title: string; description: string }
-    slug: string
-    altSlug: string
-    nav: { breadcrumbHome: string; breadcrumbCurrent: string }
-    faq: { items: readonly { q: string; a: string }[] }
-  },
-  overrides?: Partial<JsonLdOptions>,
-) {
-  const config = articleRegistry.find(a => a.id === articleId)
-  if (!config?.seoMeta) throw new Error(`Article "${articleId}" not found in registry or missing seoMeta`)
-
-  const meta = config.seoMeta
-  return buildArticleJsonLd({
-    lang,
-    url: `${PROFILE.siteUrl}/${i18n.slug}`,
-    altUrl: `${PROFILE.siteUrl}/${i18n.altSlug}`,
-    headline: i18n.header.h1,
-    alternativeHeadline: i18n.seo.title,
-    description: i18n.seo.description,
-    datePublished: meta.datePublished,
-    dateModified: meta.dateModified,
-    keywords: meta.keywords,
-    images: config.heroImage ? [config.heroImage] : meta.images,
-    breadcrumbHome: i18n.nav.breadcrumbHome,
-    breadcrumbCurrent: i18n.nav.breadcrumbCurrent,
-    faq: i18n.faq.items,
-    articleType: meta.articleType,
-    about: meta.about,
-    extra: meta.extra,
-    citation: meta.citation,
-    isBasedOn: meta.isBasedOn,
-    mentions: meta.mentions,
-    discussionUrl: meta.discussionUrl,
-    relatedLink: meta.relatedLink,
-    video: meta.video,
-    subjectOf: meta.subjectOf,
-    ...overrides,
-  })
 }

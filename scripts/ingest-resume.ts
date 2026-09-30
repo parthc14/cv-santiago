@@ -235,7 +235,7 @@ async function main() {
         section_id: c.section_id,
         section_anchor: '',
         page_path_en: '/about',
-        page_path_es: '/sobre-mi',
+        page_path_es: '/about',
         source_file: 'content/resume.md',
         format: 'plaintext',
       },

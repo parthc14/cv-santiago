@@ -184,13 +184,9 @@ export function extractSources(chunks) {
 
 // Keywords that signal the response actually references a given article
 export const ARTICLE_KEYWORDS = {
-  'n8n-for-pms':          ['n8n', 'nodemation'],
-  'jacobo':               ['jacobo', 'agente ia', 'ai agent', 'whatsapp', 'multi-agent', 'multiagent'],
-  'business-os':          ['business os', 'erp', 'airtable bases', 'crm', 'inventory'],
-  'programmatic-seo':     ['seo programático', 'programmatic seo', 'web programática', 'programmatic web', 'decision engine', 'indexable', 'dataforseo', 'seo pipeline', 'seo automatizado', 'automated seo'],
-  'self-healing-chatbot': ['chatbot', 'this chat', 'este chat', 'evals', 'self-healing', 'closed-loop', 'langfuse', 'rag'],
-  'santifer-irepair':     ['santifer irepair', 'irepair', 'repair business', 'taller de reparación'],
-  'resume':               ['resume', 'cv', 'work history', 'career history', 'currículum'],
+  'hawk':                   ['hawk', 'bottleneck', 'predictive eta', 'operational intelligence'],
+  'grocery-identification': ['grocery identification', 'grocery-only', 'core inventory', 'catalog merge'],
+  'resume':                 ['resume', 'cv', 'work history', 'career history', 'currículum'],
 }
 
 /** Filter RAG sources to only articles actually mentioned in the response, max 3 */
@@ -206,13 +202,9 @@ export function filterSourcesByResponse(sources, responseText) {
 
 // Static article routes — used to generate badges from keywords regardless of RAG
 export const ARTICLE_ROUTES = {
-  'n8n-for-pms':          { page_path_es: '/n8n-para-pms', page_path_en: '/n8n-for-pms' },
-  'jacobo':               { page_path_es: '/agente-ia-jacobo', page_path_en: '/ai-agent-jacobo' },
-  'business-os':          { page_path_es: '/business-os-para-airtable', page_path_en: '/business-os-for-airtable' },
-  'programmatic-seo':     { page_path_es: '/seo-programatico', page_path_en: '/programmatic-seo' },
-  'self-healing-chatbot': { page_path_es: '/chatbot-que-se-cura-solo', page_path_en: '/self-healing-chatbot' },
-  'santifer-irepair':     { page_path_es: '/santifer-irepair', page_path_en: '/santifer-irepair-founder' },
-  'resume':               { page_path_es: '/sobre-mi', page_path_en: '/about' },
+  'hawk':                   { page_path_es: '/hawk', page_path_en: '/hawk' },
+  'grocery-identification': { page_path_es: '/grocery-identification', page_path_en: '/grocery-identification' },
+  'resume':                 { page_path_es: '/about', page_path_en: '/about' },
 }
 
 // Home fallback
@@ -220,9 +212,9 @@ export const HOME_SOURCE = {
   article_id: 'home',
   section_id: 'portfolio',
   section_anchor: '',
-  page_path_en: '/en',
+  page_path_en: '/',
   page_path_es: '/',
-  article_slug_en: 'en',
+  article_slug_en: '',
   article_slug_es: '',
 }
 

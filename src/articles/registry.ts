@@ -102,31 +102,12 @@ export const articleRegistry: ArticleConfig[] = [
   },
 ]
 
-export function getAltPaths(): Record<string, string> {
-  const map: Record<string, string> = {
-    '/': '/en',
-    '/en': '/',
-    '/sobre-mi': '/about',
-    '/about': '/sobre-mi',
-    '/privacidad': '/privacy',
-    '/privacy': '/privacidad',
-  }
-  for (const article of articleRegistry) {
-    map[`/${article.slugs.es}`] = `/${article.slugs.en}`
-    map[`/${article.slugs.en}`] = `/${article.slugs.es}`
-  }
-  return map
-}
-
 export function getPageTitles(): Record<string, string> {
   const map: Record<string, string> = {
     '/': "Parth's Portfolio",
-    '/en': "Parth's Portfolio",
-    '/sobre-mi': 'Sobre Mí',
     '/about': 'About',
   }
   for (const article of articleRegistry) {
-    map[`/${article.slugs.es}`] = article.titles.es
     map[`/${article.slugs.en}`] = article.titles.en
   }
   return map
@@ -135,16 +116,7 @@ export function getPageTitles(): Record<string, string> {
 export function getSectionLabels(): Record<string, Record<string, string>> {
   const map: Record<string, Record<string, string>> = {}
   for (const article of articleRegistry) {
-    map[`/${article.slugs.es}`] = article.sectionLabels.es
     map[`/${article.slugs.en}`] = article.sectionLabels.en
   }
   return map
-}
-
-export function getEsSlugs(): Set<string> {
-  const slugs = new Set<string>(['/', '/privacidad', '/sobre-mi'])
-  for (const article of articleRegistry) {
-    slugs.add(`/${article.slugs.es}`)
-  }
-  return slugs
 }

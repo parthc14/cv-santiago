@@ -2,7 +2,6 @@ export type AboutLang = 'en'
 
 export const aboutContent = {
   en: {
-    altSlug: 'sobre-mi',
     seo: { title: 'About Parth Chitroda', description: 'SDE II at Amazon. Designing scalable distributed systems and operational intelligence.' },
     slug: 'about',
     heading: 'Parth Chitroda',

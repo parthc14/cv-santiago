@@ -124,7 +124,7 @@ let enPage = indexHtml
   .replace(/<meta name="twitter:description" content="[^"]*" \/>/, `<meta name="twitter:description" content="${esc(enSeo.description)}" />`);
 
 // ---------------------------------------------------------------------------
-// About / Entity Home — ES (/sobre-mi) + EN (/about)
+// About / Entity Home — EN only (/about)
 // ---------------------------------------------------------------------------
 
 const aboutJsonLd = {
@@ -168,9 +168,7 @@ const aboutPages: AboutPageData[] = [];
 for (const lang of ['en'] as const) {
   const t = aboutContent[lang];
   const slug = t.slug;
-  const altSlug = t.altSlug;
   const url = `${PROFILE.siteUrl}/${slug}`;
-  const altUrl = `${PROFILE.siteUrl}/${altSlug}`;
   const altLang = 'en';
   const ogLocale = 'en_US';
   const ogLocaleAlt = 'en_US';
