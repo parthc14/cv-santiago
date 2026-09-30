@@ -7,6 +7,7 @@
     "dev": "vite",
     "rag:export": "npx tsx --tsconfig tsconfig.app.json scripts/export-chunks.ts",
     "rag:ingest": "npx tsx --tsconfig tsconfig.app.json scripts/ingest-rag.ts",
+    "rag:ingest-resume": "npx tsx --tsconfig tsconfig.app.json scripts/ingest-resume.ts",
     "rag:sync": "npm run rag:export && npm run rag:ingest",
     "build": "npm run rag:sync && npm run prompt:sync && npx tsx --tsconfig tsconfig.app.json scripts/embed-evals.ts && npx tsx --tsconfig tsconfig.app.json scripts/update-reddit-stats.ts && npx tsx --tsconfig tsconfig.app.json scripts/update-github-stats.ts && npx tsx --tsconfig tsconfig.app.json scripts/update-discord-stats.ts && npx tsx --tsconfig tsconfig.app.json scripts/update-twitter-stats.ts && tsc -b && vite build && npx tsx --tsconfig tsconfig.app.json scripts/generate-sitemap.ts && npx tsx --tsconfig tsconfig.app.json scripts/validate-articles.ts && npx tsx --tsconfig tsconfig.app.json scripts/validate-llms-txt.ts && npx tsx --tsconfig tsconfig.app.json scripts/prerender.tsx && npx tsx --tsconfig tsconfig.app.json scripts/validate-prerender.ts && npx tsx --tsconfig tsconfig.app.json scripts/indexnow-ping.ts",
     "validate-llms-txt": "npx tsx --tsconfig tsconfig.app.json scripts/validate-llms-txt.ts",

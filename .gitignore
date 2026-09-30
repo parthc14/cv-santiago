@@ -55,3 +55,9 @@ chatbot/.playwright-mcp/
 # RAG
 .rag-hashes.json
 scripts/chunks/
+
+# embed-service (Python)
+embed-service/__pycache__/
+embed-service/**/__pycache__/
+embed-service/.venv/
+*.pyc

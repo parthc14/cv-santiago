@@ -5,11 +5,11 @@
  *   - Change detection via content hashing (skip unchanged articles)
  *   - Chunk splitting for large sections (1000 chars, 200 overlap)
  *   - Contextual retrieval: prepend summary via Groq before embedding
- *   - OpenAI text-embedding-3-small for embeddings (1536 dims)
+ *   - Self-hosted sentence-transformers (embed-service/) for embeddings (384 dims)
  *   - Upsert to Qdrant `portfolio_chunks` collection
  *
  * Requires env vars:
- *   OPENAI_API_KEY, QDRANT_URL, QDRANT_API_KEY
+ *   EMBED_SERVICE_URL, EMBED_API_KEY, QDRANT_URL, QDRANT_API_KEY
  *   GROQ_API_KEY_NEW (optional, for contextual retrieval)
  *
  * Usage:
@@ -27,6 +27,7 @@ import { createHash } from 'node:crypto'
 import OpenAI from 'openai'
 import { articleRegistry } from '../src/articles/registry.ts'
 import { getGroqClient, GROQ_MODEL } from '../api/_shared/groq.js'
+import { embedTexts as embedTextsViaService } from '../api/_shared/embeddings.js'
 import {
   qdrantEnsureCollection, qdrantUpsert, qdrantDeleteByArticle,
   qdrantGetHashes, qdrantSaveHashes, qdrantDeleteHash,
@@ -43,19 +44,11 @@ const HASHES_FILE = resolve(root, '.rag-hashes.json')
 
 const MAX_CHUNK_SIZE = 1000    // characters
 const CHUNK_OVERLAP = 200      // characters
-const EMBEDDING_MODEL = 'text-embedding-3-small'
-const EMBEDDING_BATCH_SIZE = 20 // OpenAI allows up to 2048, but we batch for safety
+const EMBEDDING_BATCH_SIZE = 20 // batched for consistency with the previous OpenAI-based pipeline
 
 // ---------------------------------------------------------------------------
 // Clients
 // ---------------------------------------------------------------------------
-
-function getOpenAI(): OpenAI {
-  if (!process.env.OPENAI_API_KEY) {
-    throw new Error('OPENAI_API_KEY is required')
-  }
-  return new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-}
 
 function getGroq(): OpenAI | null {
   if (!process.env.GROQ_API_KEY_NEW) return null
@@ -201,18 +194,13 @@ async function addContextualSummaries(
 // Embedding
 // ---------------------------------------------------------------------------
 
-async function embedTexts(texts: string[], openai: OpenAI): Promise<number[][]> {
+async function embedTexts(texts: string[]): Promise<number[][]> {
   const allEmbeddings: number[][] = []
 
   for (let i = 0; i < texts.length; i += EMBEDDING_BATCH_SIZE) {
     const batch = texts.slice(i, i + EMBEDDING_BATCH_SIZE)
-    const response = await openai.embeddings.create({
-      model: EMBEDDING_MODEL,
-      input: batch,
-    })
-    for (const item of response.data) {
-      allEmbeddings.push(item.embedding)
-    }
+    const embeddings = await embedTextsViaService(batch)
+    allEmbeddings.push(...embeddings)
   }
 
   return allEmbeddings
@@ -242,13 +230,12 @@ async function main() {
   console.log('🔄 RAG Ingestion starting...\n')
 
   // Check for env vars
-  if (!process.env.OPENAI_API_KEY || !process.env.QDRANT_URL || !process.env.QDRANT_API_KEY) {
-    console.log('⚠️  Missing env vars (OPENAI_API_KEY, QDRANT_URL, QDRANT_API_KEY)')
+  if (!process.env.EMBED_SERVICE_URL || !process.env.EMBED_API_KEY || !process.env.QDRANT_URL || !process.env.QDRANT_API_KEY) {
+    console.log('⚠️  Missing env vars (EMBED_SERVICE_URL, EMBED_API_KEY, QDRANT_URL, QDRANT_API_KEY)')
     console.log('   Skipping RAG ingestion. Set env vars to enable.\n')
     process.exit(0) // Exit gracefully so build continues
   }
 
-  const openai = getOpenAI()
   const groq = getGroq()
 
   await qdrantEnsureCollection()
@@ -302,7 +289,7 @@ async function main() {
 
     // Embed
     console.log(`     → Embedding ${enrichedTexts.length} chunks...`)
-    const embeddings = await embedTexts(enrichedTexts, openai)
+    const embeddings = await embedTexts(enrichedTexts)
 
     // Delete old + insert new
     console.log(`     → Upserting to Qdrant...`)
@@ -314,9 +301,14 @@ async function main() {
     console.log(`  ✅ ${articleId} — ${splitChunks.length} chunks ingested`)
   }
 
-  // Cleanup: remove articles from Qdrant that no longer have chunk files
+  // Cleanup: remove articles from Qdrant that no longer have chunk files.
+  // Excludes article IDs owned by other ingest scripts that share this same
+  // hash-tracking store (e.g. "resume", populated by ingest-resume.ts and
+  // never backed by a scripts/chunks/*.json file) — those aren't orphans.
+  const EXTERNALLY_MANAGED_ARTICLE_IDS = new Set(['resume'])
   const activeArticleIds = new Set(chunkFiles.map(f => basename(f, '.json')))
   for (const articleId of Object.keys(newHashes)) {
+    if (EXTERNALLY_MANAGED_ARTICLE_IDS.has(articleId)) continue
     if (!activeArticleIds.has(articleId)) {
       console.log(`  🗑  ${articleId} — removed from index (no chunk file)`)
       await qdrantDeleteByArticle(articleId)

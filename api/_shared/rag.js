@@ -4,6 +4,7 @@
 
 import { qdrantSearch } from './qdrant.js'
 import { GROQ_MODEL } from './groq.js'
+import { embedQuery as embedQueryViaService } from './embeddings.js'
 
 // ---------------------------------------------------------------------------
 // Cost tracking per span
@@ -13,7 +14,8 @@ export const MODEL_COSTS = {
   // TODO: pull the real $/token rate from Groq's current pricing page —
   // placeholder so cost dashboards don't error, not a billing source of truth.
   'openai/gpt-oss-120b': { input: 0, output: 0 },
-  'text-embedding-3-small': { input: 0.02 / 1e6 },
+  // Self-hosted (embed-service/) — no per-token billing.
+  'sentence-transformers/all-MiniLM-L6-v2': { input: 0, output: 0 },
 }
 
 export function calcCost(model, inputTokens, outputTokens = 0) {
@@ -26,14 +28,14 @@ export function calcCost(model, inputTokens, outputTokens = 0) {
 // ---------------------------------------------------------------------------
 
 export function isRagEnabled() {
-  return !!(process.env.OPENAI_API_KEY && process.env.QDRANT_URL && process.env.QDRANT_API_KEY)
+  return !!(process.env.EMBED_SERVICE_URL && process.env.EMBED_API_KEY && process.env.QDRANT_URL && process.env.QDRANT_API_KEY)
 }
 
 export const PORTFOLIO_TOOL = {
   type: 'function',
   function: {
     name: 'search_portfolio',
-    description: "Search your own published case studies for project details. You wrote these articles — they are YOUR words about YOUR projects. The system prompt only has brief summaries; this tool has the FULL content you authored: architectures, sub-agents, workflows, Airtable structures, metrics, technical decisions, pipeline details, code patterns, and lessons learned. Use this whenever the user asks for specifics about any project. Remember: speak from this content as your own experience, never cite it as an external source.",
+    description: "Search your own published case studies AND your full resume/career history for details. You wrote the case studies and lived the career history — they are YOUR words about YOUR work. The system prompt only has brief summaries; this tool has the FULL content: project architectures, metrics, technical decisions, pipeline details, code patterns, lessons learned, plus your complete work history, education, and skills beyond what's summarized in the prompt. Use this whenever the user asks for specifics about any project OR your broader career background. Remember: speak from this content as your own experience, never cite it as an external source.",
     parameters: {
       type: 'object',
       properties: {
@@ -48,32 +50,16 @@ export const PORTFOLIO_TOOL = {
 }
 
 // ---------------------------------------------------------------------------
-// RAG: embed query via OpenAI REST API (Edge-compatible)
+// RAG: embed query via the self-hosted embedding service (Edge-compatible)
 // ---------------------------------------------------------------------------
 
 export async function embedQuery(query) {
   const t0 = Date.now()
-  const response = await fetch('https://api.openai.com/v1/embeddings', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'text-embedding-3-small',
-      input: query,
-    }),
-  })
-
-  if (!response.ok) {
-    throw new Error(`OpenAI embedding failed: ${response.status}`)
-  }
-
-  const data = await response.json()
+  const embedding = await embedQueryViaService(query)
   return {
-    embedding: data.data[0].embedding,
+    embedding,
     latencyMs: Date.now() - t0,
-    totalTokens: data.usage?.total_tokens || 0,
+    totalTokens: 0, // self-hosted — no per-token billing to track
   }
 }
 
@@ -204,6 +190,7 @@ export const ARTICLE_KEYWORDS = {
   'programmatic-seo':     ['seo programático', 'programmatic seo', 'web programática', 'programmatic web', 'decision engine', 'indexable', 'dataforseo', 'seo pipeline', 'seo automatizado', 'automated seo'],
   'self-healing-chatbot': ['chatbot', 'this chat', 'este chat', 'evals', 'self-healing', 'closed-loop', 'langfuse', 'rag'],
   'santifer-irepair':     ['santifer irepair', 'irepair', 'repair business', 'taller de reparación'],
+  'resume':               ['resume', 'cv', 'work history', 'career history', 'currículum'],
 }
 
 /** Filter RAG sources to only articles actually mentioned in the response, max 3 */
@@ -225,6 +212,7 @@ export const ARTICLE_ROUTES = {
   'programmatic-seo':     { page_path_es: '/seo-programatico', page_path_en: '/programmatic-seo' },
   'self-healing-chatbot': { page_path_es: '/chatbot-que-se-cura-solo', page_path_en: '/self-healing-chatbot' },
   'santifer-irepair':     { page_path_es: '/santifer-irepair', page_path_en: '/santifer-irepair-founder' },
+  'resume':               { page_path_es: '/sobre-mi', page_path_en: '/about' },
 }
 
 // Home fallback
@@ -278,7 +266,7 @@ export async function searchPortfolio(query, trace, groqClient) {
 
   // 1. Embed
   let embedding
-  const embeddingGen = trace?.generation({ name: 'embedding', model: 'text-embedding-3-small', metadata: { query } })
+  const embeddingGen = trace?.generation({ name: 'embedding', model: 'sentence-transformers/all-MiniLM-L6-v2', metadata: { query } })
   try {
     const embResult = await embedQuery(query)
     embedding = embResult.embedding
@@ -313,8 +301,13 @@ export async function searchPortfolio(query, trace, groqClient) {
       return result
     }
 
-    // Filter out low-similarity chunks before reranking
-    const filteredChunks = searchResult.chunks.filter(c => (c.similarity || 0) >= 0.3)
+    // Filter out low-similarity chunks before reranking. Threshold calibrated
+    // for all-MiniLM-L6-v2's cosine-similarity distribution, which runs lower
+    // than OpenAI's embeddings for genuine matches (observed: real matches
+    // ~0.2-0.6, true non-matches below ~0.1) — re-tune if the embedding
+    // model changes.
+    const SIMILARITY_THRESHOLD = 0.15
+    const filteredChunks = searchResult.chunks.filter(c => (c.similarity || 0) >= SIMILARITY_THRESHOLD)
     if (!filteredChunks.length) {
       result.degradedReason = 'no_match'
       return result
@@ -403,9 +396,9 @@ export async function sendJailbreakAlert(userMessage) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      from: 'Santi Bot <onboarding@resend.dev>',
+      from: 'Chatbot Alert <onboarding@resend.dev>',
       to: process.env.ALERT_EMAIL,
-      subject: '🚨 JAILBREAK ATTEMPT - santifer.io',
+      subject: '🚨 JAILBREAK ATTEMPT - ctrlaltparth.tech',
       html: `
         <h2>🚨 Jailbreak Attempt Detected</h2>
         <p><strong>Time:</strong> ${new Date().toISOString()}</p>

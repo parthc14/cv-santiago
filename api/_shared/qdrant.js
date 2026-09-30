@@ -33,10 +33,22 @@ async function qdrantFetch(path, options = {}) {
 // ---------------------------------------------------------------------------
 
 async function ensureCollection(name, vectorSize) {
-  const exists = await fetch(`${baseUrl()}/collections/${name}`, {
+  const existing = await fetch(`${baseUrl()}/collections/${name}`, {
     headers: { 'api-key': process.env.QDRANT_API_KEY },
   })
-  if (exists.ok) return
+
+  if (existing.ok) {
+    const data = await existing.json()
+    const currentSize = data.result?.config?.params?.vectors?.size
+    if (currentSize === vectorSize) return
+
+    // Embedding model/dimension changed — recreate. Safe as long as the
+    // collection has no points we still need (checked by the caller's
+    // migration process, not here); this project's collections are always
+    // fully repopulated by re-running the ingest scripts.
+    await qdrantFetch(`/collections/${name}`, { method: 'DELETE' })
+  }
+
   await qdrantFetch(`/collections/${name}`, {
     method: 'PUT',
     body: JSON.stringify({
@@ -45,9 +57,21 @@ async function ensureCollection(name, vectorSize) {
   })
 }
 
+async function ensurePayloadIndex(name, fieldName, schema) {
+  // Idempotent — creating an index that already exists is a no-op success.
+  await qdrantFetch(`/collections/${name}/index`, {
+    method: 'PUT',
+    body: JSON.stringify({ field_name: fieldName, field_schema: schema }),
+  })
+}
+
 export async function qdrantEnsureCollection() {
-  await ensureCollection(COLLECTION, 1536) // text-embedding-3-small
+  await ensureCollection(COLLECTION, 384) // sentence-transformers/all-MiniLM-L6-v2
   await ensureCollection(META_COLLECTION, 1) // dummy vectors — payload-only lookups
+
+  // qdrantDeleteByArticle filters on this field — Qdrant requires an index
+  // to filter on a payload field at all.
+  await ensurePayloadIndex(COLLECTION, 'metadata.article_id', 'keyword')
 }
 
 // ---------------------------------------------------------------------------
