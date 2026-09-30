@@ -24,16 +24,15 @@ const root = resolve(__dirname, '..')
 
 const FIX_MODE = process.argv.includes('--fix')
 
-/** Map article id → source file (relative to root) */
-const SOURCE_MAP: Record<string, string> = {
-  'n8n-for-pms': 'src/N8nForPMs.tsx',
-  'jacobo': 'src/JacoboAgent.tsx',
-  'business-os': 'src/BusinessOS.tsx',
-  'programmatic-seo': 'src/ProgrammaticSeo.tsx',
-  'santifer-irepair': 'src/SantiferIRepair.tsx',
-  'self-healing-chatbot': 'src/SelfHealingChatbot.tsx',
-  'career-ops': 'src/CareerOps.tsx',
-}
+/**
+ * Map article id → source file (relative to root). Current articles
+ * (hawk, grocery-identification) render via plain JSX and get their SEO/
+ * JSON-LD injected server-side in scripts/prerender.tsx rather than calling
+ * useArticleSeo/buildArticleJsonLd inline, so the checks below that rely on
+ * finding those calls in the source file don't apply to them yet — leaving
+ * this map empty until an article actually uses that inline pattern.
+ */
+const SOURCE_MAP: Record<string, string> = {}
 
 // ---------------------------------------------------------------------------
 // Import registry (type-only reference — we read it as text too)
