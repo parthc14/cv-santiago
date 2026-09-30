@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { Download, Copy, Check, ExternalLink, Clock } from 'lucide-react'
 import { EditorModeProvider, EditorLabel, H2, StepList, Accordion } from './content-types'
+import { PROFILE } from '../profile-data'
 
 // ---------------------------------------------------------------------------
 // Inline utilities
@@ -173,49 +174,33 @@ interface ArticleFooterProps {
 
 const FOOTER_I18N = {
   es: {
-    role: 'Head of Applied AI · Builder of Career-Ops',
-    bio: 'Construyó y vendió un negocio de 16 años en 2025. Creador de Career-Ops. Ahora aplica el mismo pensamiento de sistemas a AI enterprise.',
-    fellowAt: 'Teaching Fellow en',
     copyright: 'Todos los derechos reservados.',
   },
   en: {
-    role: 'Head of Applied AI · Builder of Career-Ops',
-    bio: 'Built and sold a 16-year business in 2025. Creator of Career-Ops. Now bringing that same systems thinking to enterprise AI.',
-    fellowAt: 'Teaching Fellow at',
     copyright: 'All rights reserved.',
   },
 } as const
 
-export function ArticleFooter({ lang, utmCampaign }: ArticleFooterProps) {
+export function ArticleFooter({ lang }: ArticleFooterProps) {
   const f = FOOTER_I18N[lang]
-  const fellowUrl = `https://maven.com/marily-nika/ai-pm-bootcamp?utm_source=santifer&utm_medium=casestudy&utm_campaign=${utmCampaign}`
   return (
     <footer className="mt-16 pt-8 border-t border-border">
       <div className="flex items-start gap-3 mb-6">
         <img
           src="/foto-avatar-sm.webp"
-          alt="Santiago Fernández de Valderrama"
+          alt={PROFILE.name}
           className="w-12 h-12 rounded-full shrink-0"
           width={48}
           height={48}
         />
         <div>
-          <p className="font-medium text-foreground">Santiago Fernández de Valderrama</p>
+          <p className="font-medium text-foreground">{PROFILE.name}</p>
           <p className="text-sm text-muted-foreground">
-            {f.role}
-            {' · '}{f.fellowAt}{' '}
-            <a
-              href={fellowUrl}
-              target="_blank"
-              rel="noopener noreferrer nofollow"
-              className="text-primary hover:underline"
-            >
-              AI Product Academy
-            </a>
+            {PROFILE.jobTitle} · {PROFILE.company.name}
           </p>
         </div>
       </div>
-      <p className="text-sm text-muted-foreground leading-relaxed mb-1">{f.bio}</p>
+      <p className="text-sm text-muted-foreground leading-relaxed mb-1">{PROFILE.bio}</p>
       <Link
         to={'/about'}
         className="inline-block text-sm text-primary hover:underline transition-colors mb-6"
@@ -233,7 +218,7 @@ export function ArticleFooter({ lang, utmCampaign }: ArticleFooterProps) {
         </a>
       </div>
       <div className="flex items-center gap-3 text-xs text-muted-foreground">
-        <span>&copy; {new Date().getFullYear()} Santiago Fernández de Valderrama. {f.copyright}</span>
+        <span>&copy; {new Date().getFullYear()} {PROFILE.name}. {f.copyright}</span>
         <span className="text-border">|</span>
         <Link to={'/privacy'} className="hover:text-primary transition-colors">
           {'Privacy'}

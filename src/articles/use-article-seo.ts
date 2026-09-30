@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { PROFILE } from '../profile-data'
 
 // ---------------------------------------------------------------------------
 // DOM helpers
@@ -52,8 +53,8 @@ export function useArticleSeo(opts: ArticleSeoOpts) {
       publishedTime, modifiedTime, articleTags, jsonLd, xDefaultSlug,
     } = opts
 
-    const url = `https://parthchitroda.com/${slug}`
-    const altUrl = `https://parthchitroda.com/${altSlug}`
+    const url = `${PROFILE.siteUrl}/${slug}`
+    const altUrl = `${PROFILE.siteUrl}/${altSlug}`
     const altLang = 'es'
     const defaultSlug = xDefaultSlug ?? (lang === 'es' ? slug : altSlug)
 
@@ -69,7 +70,7 @@ export function useArticleSeo(opts: ArticleSeoOpts) {
     upsertMeta('property', 'og:url', url)
     upsertMeta('property', 'og:title', title)
     upsertMeta('property', 'og:description', description)
-    upsertMeta('property', 'og:site_name', 'parthchitroda.com')
+    upsertMeta('property', 'og:site_name', PROFILE.siteUrl.replace(/^https?:\/\//, ''))
     upsertMeta('property', 'og:locale', 'en_US')
     upsertMeta('property', 'og:locale:alternate', 'es_ES')
     upsertMeta('property', 'article:published_time', publishedTime)
@@ -92,7 +93,7 @@ export function useArticleSeo(opts: ArticleSeoOpts) {
     for (const { hreflang, href } of [
       { hreflang: lang, href: url },
       { hreflang: altLang, href: altUrl },
-      { hreflang: 'x-default', href: `https://parthchitroda.com/${defaultSlug}` },
+      { hreflang: 'x-default', href: `${PROFILE.siteUrl}/${defaultSlug}` },
     ]) {
       const link = document.createElement('link')
       link.rel = 'alternate'
@@ -133,7 +134,7 @@ export function useHomeSeo({ lang, title, description }: { lang: string; title: 
     document.querySelector('meta[property="og:description"]')?.setAttribute('content', description)
     document.querySelector('meta[property="og:locale"]')?.setAttribute('content', lang === 'en' ? 'en_US' : 'es_ES')
 
-    const canonical = lang === 'en' ? 'https://parthchitroda.com/en' : 'https://parthchitroda.com/'
+    const canonical = lang === 'en' ? `${PROFILE.siteUrl}/en` : `${PROFILE.siteUrl}/`
     document.querySelector('link[rel="canonical"]')?.setAttribute('href', canonical)
     document.querySelector('meta[property="og:url"]')?.setAttribute('content', canonical)
 

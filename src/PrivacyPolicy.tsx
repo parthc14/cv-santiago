@@ -1,12 +1,15 @@
 import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { ArticleLayout } from './articles/components'
+import { PROFILE } from './profile-data'
+
+const SITE_HOST = PROFILE.siteUrl.replace(/^https?:\/\//, '')
 
 const content = {
   es: {
     title: 'Politica de Privacidad',
     lastUpdated: 'Ultima actualizacion: 15 de marzo de 2026',
-    intro: 'Esta politica describe como se recopilan y utilizan los datos cuando visitas parthchitroda.com.',
+    intro: `Esta politica describe como se recopilan y utilizan los datos cuando visitas ${SITE_HOST}.`,
     sections: [
       {
         heading: 'Que datos se recopilan',
@@ -27,7 +30,7 @@ const content = {
       {
         heading: 'Terceros',
         items: [
-          'Anthropic (Claude): procesa los mensajes del chatbot para generar respuestas.',
+          'Groq: procesa los mensajes del chatbot para generar respuestas.',
           'OpenAI (Realtime API): procesa el audio del modo voz para la conversacion en tiempo real.',
           'Langfuse: almacena trazas anonimizadas de conversaciones para observabilidad y mejora de calidad.',
           'Vercel: aloja el sitio web y recopila analiticas anonimas de uso.',
@@ -44,7 +47,7 @@ const content = {
       {
         heading: 'Contacto',
         body: 'Para cualquier consulta sobre privacidad, puedes escribir a:',
-        email: 'hola@parthchitroda.com',
+        email: PROFILE.email,
       },
     ],
     backHome: 'Volver al inicio',
@@ -52,7 +55,7 @@ const content = {
   en: {
     title: 'Privacy Policy',
     lastUpdated: 'Last updated: March 15, 2026',
-    intro: 'This policy describes how data is collected and used when you visit parthchitroda.com.',
+    intro: `This policy describes how data is collected and used when you visit ${SITE_HOST}.`,
     sections: [
       {
         heading: 'What data is collected',
@@ -73,7 +76,7 @@ const content = {
       {
         heading: 'Third parties',
         items: [
-          'Anthropic (Claude): processes chatbot messages to generate responses.',
+          'Groq: processes chatbot messages to generate responses.',
           'OpenAI (Realtime API): processes voice mode audio for real-time conversation.',
           'Langfuse: stores anonymized conversation traces for observability and quality improvement.',
           'Vercel: hosts the website and collects anonymous usage analytics.',
@@ -90,7 +93,7 @@ const content = {
       {
         heading: 'Contact',
         body: 'For any privacy-related inquiries, you can write to:',
-        email: 'hola@parthchitroda.com',
+        email: PROFILE.email,
       },
     ],
     backHome: 'Back to home',
@@ -108,7 +111,7 @@ export default function PrivacyPolicy({ lang = 'es' }: { lang?: 'es' | 'en' }) {
   const t = content[lang]
 
   useEffect(() => {
-    document.title = `${t.title} | parthchitroda.com`
+    document.title = `${t.title} | ${SITE_HOST}`
 
     // noindex
     let robots = document.querySelector('meta[name="robots"]') as HTMLMetaElement
@@ -121,13 +124,13 @@ export default function PrivacyPolicy({ lang = 'es' }: { lang?: 'es' | 'en' }) {
 
     // Fix canonical (SPA fallback serves homepage canonical — override it)
     let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement
-    if (canonical) canonical.href = `https://parthchitroda.com/${'privacy'}`
+    if (canonical) canonical.href = `${PROFILE.siteUrl}/privacy`
 
     // Fix meta description
     let desc = document.querySelector('meta[name="description"]') as HTMLMetaElement
     if (desc) desc.content = lang === 'es'
-      ? 'Politica de privacidad de parthchitroda.com. Como se recopilan y utilizan los datos del chatbot y la web.'
-      : 'Privacy policy for parthchitroda.com. How chatbot and website data is collected and used.'
+      ? `Politica de privacidad de ${SITE_HOST}. Como se recopilan y utilizan los datos del chatbot y la web.`
+      : `Privacy policy for ${SITE_HOST}. How chatbot and website data is collected and used.`
 
     return () => {
       robots.content = 'index, follow'

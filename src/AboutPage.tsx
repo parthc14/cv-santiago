@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { MapPin, Mail, ExternalLink, GraduationCap, Briefcase, ChevronRight, Clock } from 'lucide-react'
 import { aboutContent, type AboutLang } from './about-i18n'
+import { PROFILE, SAME_AS } from './profile-data'
 
 const SOCIAL_LINKS = [
   { name: 'LinkedIn', url: 'https://www.linkedin.com/in/parth-chitroda' },
@@ -21,11 +22,11 @@ export default function AboutPage({ lang = 'en' }: { lang?: AboutLang }) {
 
     let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement
     if (!canonical) { canonical = document.createElement('link'); canonical.rel = 'canonical'; document.head.appendChild(canonical) }
-    canonical.href = `https://parthchitroda.com/${t.slug}`
+    canonical.href = `${PROFILE.siteUrl}/${t.slug}`
 
     const hreflangs = [
-      { lang: 'en', href: 'https://parthchitroda.com/about' },
-      { lang: 'x-default', href: 'https://parthchitroda.com/about' },
+      { lang: 'en', href: `${PROFILE.siteUrl}/about` },
+      { lang: 'x-default', href: `${PROFILE.siteUrl}/about` },
     ]
     document.querySelectorAll('link[hreflang]').forEach(el => el.remove())
     for (const hl of hreflangs) {
@@ -44,66 +45,26 @@ export default function AboutPage({ lang = 'en' }: { lang?: AboutLang }) {
       dateModified: '2026-04-21',
       mainEntity: {
         '@type': 'Person',
-        '@id': 'https://parthchitroda.com/#person',
-        name: 'Parth Chitroda',
-        url: 'https://parthchitroda.com',
-        image: 'https://parthchitroda.com/foto-avatar.png',
-        email: 'parthchitroda@gmail.com',
-        jobTitle: ['Software Development Engineer II', 'Systems Architect', 'AWS Specialist'],
-        knowsAbout: [
-          { '@type': 'Thing', name: 'Artificial Intelligence', url: 'https://en.wikipedia.org/wiki/Artificial_intelligence' },
-          { '@type': 'Thing', name: 'Machine Learning', url: 'https://en.wikipedia.org/wiki/Machine_learning' },
-          { '@type': 'Thing', name: 'Multi-Agent System', url: 'https://en.wikipedia.org/wiki/Multi-agent_system' },
-          { '@type': 'Thing', name: 'Retrieval-Augmented Generation', url: 'https://en.wikipedia.org/wiki/Retrieval-augmented_generation' },
-          { '@type': 'Thing', name: 'No-code development platform', url: 'https://en.wikipedia.org/wiki/No-code_development_platform' },
-          { '@type': 'Thing', name: 'Prompt Engineering' },
-          { '@type': 'SoftwareApplication', name: 'Airtable', url: 'https://airtable.com' },
-          { '@type': 'SoftwareApplication', name: 'n8n', url: 'https://n8n.io' },
-          { '@type': 'SoftwareApplication', name: 'Claude API', url: 'https://docs.anthropic.com' },
-        ],
-        hasCredential: [
-          { '@type': 'EducationalOccupationalCredential', name: 'Introduction to Model Context Protocol', recognizedBy: { '@type': 'Organization', name: 'Anthropic' }, url: 'https://verify.skilljar.com/c/4pxam3irsioq' },
-          { '@type': 'EducationalOccupationalCredential', name: 'Claude Code in Action', recognizedBy: { '@type': 'Organization', name: 'Anthropic' }, url: 'https://verify.skilljar.com/c/eijx7hwc2x89' },
-          { '@type': 'EducationalOccupationalCredential', name: 'Advanced MCP Topics', recognizedBy: { '@type': 'Organization', name: 'Anthropic' }, url: 'https://verify.skilljar.com/c/eiovmq5qaeyd' },
-          { '@type': 'EducationalOccupationalCredential', name: 'Building with the Claude API', recognizedBy: { '@type': 'Organization', name: 'Anthropic' }, url: 'https://verify.skilljar.com/c/s4bu5znz53vm' },
-          { '@type': 'EducationalOccupationalCredential', name: 'AI Fluency: Framework & Foundations', recognizedBy: { '@type': 'Organization', name: 'Anthropic' }, url: 'https://verify.skilljar.com/c/d6rhfox7ktq6' },
-          { '@type': 'EducationalOccupationalCredential', name: 'Teaching AI Fluency', recognizedBy: { '@type': 'Organization', name: 'Anthropic' }, url: 'https://verify.skilljar.com/c/x3bzuoz99rq5' },
-          { '@type': 'EducationalOccupationalCredential', name: 'AI App Builder Certification', recognizedBy: { '@type': 'Organization', name: 'Airtable' }, url: 'https://verify.skilljar.com/c/gwg7ak9qgf7r' },
-          { '@type': 'EducationalOccupationalCredential', name: 'Airtable Builder Certification', recognizedBy: { '@type': 'Organization', name: 'Airtable' }, url: 'https://verify.skilljar.com/c/id2e4zgqtasv' },
-          { '@type': 'EducationalOccupationalCredential', name: 'Airtable Admin Certification', recognizedBy: { '@type': 'Organization', name: 'Airtable' }, url: 'https://verify.skilljar.com/c/u3r8kgn5wdit' },
-          { '@type': 'EducationalOccupationalCredential', name: 'Make Advanced', recognizedBy: { '@type': 'Organization', name: 'Make Academy' }, url: 'https://www.credly.com/badges/d27b8174-ef20-46bd-9d81-ee05e9c349e8' },
-        ],
-        alumniOf: [
-          { '@type': 'EducationalOrganization', name: 'AI Product Academy — AI PM Bootcamp', url: 'https://maven.com/marily-nika/ai-pm-bootcamp', founder: { '@type': 'Person', name: 'Dr. Marily Nika', sameAs: 'https://www.wikidata.org/wiki/Q107463356' } },
-          { '@type': 'EducationalOrganization', name: 'BIGSEO - Master en Inteligencia Artificial' },
-          { '@type': 'EducationalOrganization', name: 'ETSI - Universidad de Sevilla' },
-        ],
-        founder: {
-          '@type': 'Organization',
-          name: 'Santifer iRepair',
-          url: 'https://santiferirepair.es',
-          foundingDate: '2009',
-        },
-        sameAs: [
-          'https://www.linkedin.com/in/parth-chitroda',
-          'https://github.com/parthc14',
-        ],
-        subjectOf: {
-          '@type': 'NewsArticle',
-          headline: 'Salir de compras: Una solución exprés para el teléfono',
-          publisher: { '@type': 'NewsMediaOrganization', name: 'Diario de Sevilla' },
-          datePublished: '2014-06-19',
-          url: 'https://www.diariodesevilla.es/vivirensevilla/Salir-compras-solucion-expres-telefono_0_817718799.html',
-        },
+        '@id': `${PROFILE.siteUrl}/#person`,
+        name: PROFILE.name,
+        url: PROFILE.siteUrl,
+        image: `${PROFILE.siteUrl}${PROFILE.avatarUrl}`,
+        email: PROFILE.email,
+        jobTitle: PROFILE.jobTitle,
+        knowsAbout: PROFILE.knowsAbout.map(name => ({ '@type': 'Thing', name })),
+        alumniOf: PROFILE.education.map(e => ({ '@type': 'EducationalOrganization', name: e.institution })),
+        sameAs: SAME_AS,
         worksFor: {
           '@type': 'Organization',
-          '@id': 'https://zinkee.com/#org',
-          name: 'Zinkee',
-          url: 'https://zinkee.com',
-          description: 'B2B SaaS platform building a horizontal AI layer for SMBs.',
+          name: PROFILE.company.name,
+          url: PROFILE.company.url,
         },
-        award: 'AI Product Academy Bootcamp — Winning Project 2025 (Maven, led by Dr. Marily Nika, Google)',
-        address: { '@type': 'PostalAddress', addressLocality: 'Sevilla', addressCountry: 'ES' },
+        address: {
+          '@type': 'PostalAddress',
+          addressLocality: PROFILE.location.city,
+          addressRegion: PROFILE.location.region,
+          addressCountry: PROFILE.location.country,
+        },
       },
     })
 
@@ -112,7 +73,7 @@ export default function AboutPage({ lang = 'en' }: { lang?: AboutLang }) {
     faqScript.textContent = JSON.stringify({
       '@context': 'https://schema.org',
       '@type': 'FAQPage',
-      '@id': `https://parthchitroda.com/${t.slug}/#faq`,
+      '@id': `${PROFILE.siteUrl}/${t.slug}/#faq`,
       inLanguage: lang,
       mainEntity: t.faq.map(item => ({
         '@type': 'Question',
@@ -162,7 +123,7 @@ export default function AboutPage({ lang = 'en' }: { lang?: AboutLang }) {
         </header>
 
         {/* Manifesto */}
-        <blockquote cite="https://parthchitroda.com/career-ops" className="mb-10 border-l-4 border-primary pl-6 pr-4 py-3 text-xl md:text-2xl italic font-display leading-snug text-foreground/90">
+        <blockquote cite={PROFILE.siteUrl} className="mb-10 border-l-4 border-primary pl-6 pr-4 py-3 text-xl md:text-2xl italic font-display leading-snug text-foreground/90">
           {t.manifesto}
         </blockquote>
 
