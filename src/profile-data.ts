@@ -19,7 +19,7 @@ export const PROFILE = {
   linkedin: 'https://www.linkedin.com/in/parth-chitroda',
   github: 'https://github.com/parthc14',
   /** Cal.com event path (cal.com/<this>) for the 30-minute booking button */
-  calLink: 'parthchitroda/30min',
+  calLink: 'parth-chitroda-agqews/30min',
   bio: 'Backend engineer building secure, scalable, high-performance microservices and APIs — currently at Amazon WW Grocery.',
   education: [
     { institution: 'University of Florida', degree: 'M.S., Computer and Information Sciences', dates: 'Aug 2019 – May 2021' },
