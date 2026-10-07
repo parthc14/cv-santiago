@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback, useMemo, useReducer, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'motion/react'
-import { Mail, ExternalLink, Briefcase, GraduationCap, Code, BadgeCheck, FolderGit2, SkipForward, List, Bot, Zap, Globe, ArrowRight } from 'lucide-react'
+import { Mail, ExternalLink, Briefcase, GraduationCap, Code, BadgeCheck, FolderGit2, SkipForward, List, Bot, Zap, Globe, ArrowRight, CalendarClock } from 'lucide-react'
 import { translations, seo, type Lang } from './i18n'
 import { useHomeSeo } from './articles/use-article-seo'
 import { getTechIcon } from './tech-icons'
 import { articleRegistry } from './articles/registry'
+import { PROFILE } from './profile-data'
 
 
 function LinkedInLogo({ className = "w-4 h-4" }: { className?: string }) {
@@ -14,6 +15,24 @@ function LinkedInLogo({ className = "w-4 h-4" }: { className?: string }) {
       <path d="M0 1.146C0 .513.526 0 1.175 0h13.65C15.474 0 16 .513 16 1.146v13.708c0 .633-.526 1.146-1.175 1.146H1.175C.526 16 0 15.487 0 14.854zm4.943 12.248V6.169H2.542v7.225zm-1.2-8.212c.837 0 1.358-.554 1.358-1.248-.015-.709-.52-1.248-1.342-1.248S2.4 3.226 2.4 3.934c0 .694.521 1.248 1.327 1.248zm4.908 8.212V9.359c0-.216.016-.432.08-.586.173-.431.568-.878 1.232-.878.869 0 1.216.662 1.216 1.634v3.865h2.401V9.25c0-2.22-1.184-3.252-2.764-3.252-1.274 0-1.845.7-2.165 1.193v.025h-.016l.016-.025V6.169h-2.4c.03.678 0 7.225 0 7.225z"/>
     </svg>
   )
+}
+
+/**
+ * Open the Cal.com booking popup. The embed is loaded on first click so it
+ * costs nothing on page load; if it can't load (offline, blocked script),
+ * fall back to the booking page in a new tab.
+ */
+async function openBooking(e: React.MouseEvent<HTMLAnchorElement>) {
+  if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return // let new-tab clicks through
+  e.preventDefault()
+  try {
+    const { getCalApi } = await import('@calcom/embed-react')
+    const cal = await getCalApi()
+    cal('ui', { theme: document.documentElement.classList.contains('dark') ? 'dark' : 'light' })
+    cal('modal', { calLink: PROFILE.calLink, config: { layout: 'month_view' } })
+  } catch {
+    window.open(`https://cal.com/${PROFILE.calLink}`, '_blank', 'noopener,noreferrer')
+  }
 }
 
 function useHydrated() {
@@ -1803,6 +1822,16 @@ function App() {
                 <LinkedInLogo className="w-4 h-4 text-[hsl(var(--linkedin))]" />
                 LinkedIn
                 <ExternalLink className="w-3 h-3" aria-hidden="true" />
+              </a>
+              <a
+                href={`https://cal.com/${PROFILE.calLink}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={openBooking}
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-full border border-border hover:border-primary/50 transition-colors duration-200 hover:bg-primary/5"
+              >
+                <CalendarClock className="w-4 h-4 text-primary" aria-hidden="true" />
+                {t.cta.book}
               </a>
             </div>
           </AnimatedSection>

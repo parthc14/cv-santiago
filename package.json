@@ -28,6 +28,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.71.2",
+    "@calcom/embed-react": "^1.5.3",
     "@vercel/analytics": "^1.6.1",
     "@vercel/functions": "^3.3.6",
     "langfuse": "^3.38.6",

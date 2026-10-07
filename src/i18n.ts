@@ -221,6 +221,7 @@ export const translations = {
       title: "Let's talk",
       desc: 'Passionate about building systems that scale. Always interested in discussing distributed systems challenges, cloud architecture, operational excellence, and AI-driven automation.',
       contact: 'Contact',
+      book: 'Book 30 mins with me',
     },
     ui: {
       languageBanner: '',
