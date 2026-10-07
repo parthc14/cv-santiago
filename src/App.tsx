@@ -1584,7 +1584,7 @@ function App() {
                         ))}
                       </ul>
 
-                      <div className="mt-auto flex flex-wrap items-center gap-x-6 gap-y-3">
+                      <div className="mt-auto flex flex-col items-start gap-3">
                         {/* Stretched link: the whole card opens the project page */}
                         <Link
                           to={`/${article.slugs.en}`}
