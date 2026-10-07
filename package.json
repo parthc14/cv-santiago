@@ -24,10 +24,13 @@
     "chats:tui": "npx tsx scripts/chats-tui.ts",
     "test:contract": "npx tsx tests/ops-contract.test.ts",
     "test:ops": "npx tsx tests/ops-dashboard.test.ts",
+    "test:booking": "npx tsx tests/booking-window.test.ts",
+    "cal:setup": "npx tsx scripts/cal-setup.ts",
     "diagnose:rag": "npx tsx scripts/diagnose-rag.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.71.2",
+    "@calcom/embed-react": "^1.5.3",
     "@vercel/analytics": "^1.6.1",
     "@vercel/functions": "^3.3.6",
     "langfuse": "^3.38.6",
