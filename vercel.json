@@ -67,7 +67,9 @@
     { "source": "/about", "destination": "/about/index.html" },
     { "source": "/privacy", "destination": "/privacy/index.html" },
     { "source": "/hawk", "destination": "/hawk/index.html" },
-    { "source": "/grocery-identification", "destination": "/grocery-identification/index.html" }
+    { "source": "/grocery-identification", "destination": "/grocery-identification/index.html" },
+    { "source": "/barcode-multi-asin", "destination": "/barcode-multi-asin/index.html" },
+    { "source": "/multi-region-migration", "destination": "/multi-region-migration/index.html" }
   ],
   "crons": [
     {

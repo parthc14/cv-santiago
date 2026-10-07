@@ -33,6 +33,7 @@ export const translations = {
       ],
       nav: [
         { icon: 'briefcase', label: 'My path', href: '#experience' },
+        { icon: 'folder', label: 'Projects', href: '#projects' },
         { icon: 'zap', label: 'AI & Automation', href: '#ai-automation' },
         { icon: 'mail', label: "Let's talk", href: '#contact' },
         { icon: 'bot', label: 'Ask me', href: '#chat', highlight: true },
@@ -94,6 +95,11 @@ export const translations = {
           desc: 'System design reviews, code reviews, mentoring engineers, incident response',
         },
       ],
+    },
+    projects: {
+      title: 'Work Summary',
+      desc: 'Deep dives into systems I designed and shipped — architecture, trade-offs, and impact.',
+      cta: 'Read case study',
     },
     aiAutomation: {
       title: 'AI & Automation Interest',

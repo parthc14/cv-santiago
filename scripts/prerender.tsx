@@ -29,12 +29,16 @@ import PrivacyPolicy from '../src/PrivacyPolicy.tsx';
 import { seo } from '../src/i18n.ts';
 import { hawkContent } from '../src/hawk-i18n.ts';
 import { groceryIdentContent } from '../src/grocery-ident-i18n.ts';
+import { barcodeAsinContent } from '../src/barcode-asin-i18n.ts';
+import { multiRegionMigrationContent } from '../src/multi-region-migration-i18n.ts';
 import { PROFILE, SAME_AS } from '../src/profile-data.ts';
 
 // Map article id → i18n content for JSON-LD generation
 const i18nMap: Record<string, Record<string, { header: { h1: string }; nav: { breadcrumbHome: string; breadcrumbCurrent: string }; faq: { items: readonly { q: string; a: string }[] } }>> = {
   'hawk': hawkContent,
   'grocery-identification': groceryIdentContent,
+  'barcode-multi-asin': barcodeAsinContent,
+  'multi-region-migration': multiRegionMigrationContent,
 };
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
