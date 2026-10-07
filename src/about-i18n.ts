@@ -33,6 +33,11 @@ export const aboutContent = {
     projectsHeading: 'Projects',
     projects: [
       {
+        name: 'Barcode Linked to Multiple ASINs',
+        href: '/barcode-multi-asin',
+        desc: 'Event-driven system (SNS/SQS + DynamoDB + AWS Batch) that transfers on-hand inventory from discontinued products to their replacements across 600+ stores, projected to save $1.55M annually.'
+      },
+      {
         name: 'HAWK: Predictive Operations Intelligence Platform',
         href: '/hawk',
         desc: 'Multi-site operational intelligence system with subprocess-level bottleneck detection and predictive analytics using hybrid architecture (SNS/Lambda + time-series + ML).'
@@ -41,6 +46,11 @@ export const aboutContent = {
         name: 'Grocery Identification Microservice',
         href: '/grocery-identification',
         desc: 'Near real-time inventory event processing microservice handling 10K-100K events daily with idempotent processing and distributed transaction patterns.'
+      },
+      {
+        name: 'Multi-Region Data Migration',
+        href: '/multi-region-migration',
+        desc: 'Re-architected an inventory datastore from relational to DynamoDB, migrating 10M+ records across regions with under 5 minutes of downtime for 10x throughput at 10% lower cost.'
       },
     ],
     educationHeading: 'Education',

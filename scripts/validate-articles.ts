@@ -26,7 +26,7 @@ const FIX_MODE = process.argv.includes('--fix')
 
 /**
  * Map article id → source file (relative to root). Current articles
- * (hawk, grocery-identification) render via plain JSX and get their SEO/
+ * (hawk, grocery-identification, barcode-multi-asin, multi-region-migration) render via plain JSX and get their SEO/
  * JSON-LD injected server-side in scripts/prerender.tsx rather than calling
  * useArticleSeo/buildArticleJsonLd inline, so the checks below that rely on
  * finding those calls in the source file don't apply to them yet — leaving

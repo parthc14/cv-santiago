@@ -19,7 +19,7 @@ Software Engineer with 5+ years of experience designing, developing, and maintai
 ### Amazon WW Grocery — Seattle, WA
 **Software Dev. Engineer II — Oct 2023 – Present**
 
-**Barcode Linked to Multiple ASINs**
+**Barcode Linked to Multiple ASINs** — [Case Study](https://ctrlaltparth.tech/barcode-multi-asin)
 - Drove design and implementation across 3 partner teams, mentoring 5+ junior engineers to build a system that automatically transfers on-hand inventory from a discontinued product to its replacement across 600+ stores, projected to save $1.55M annually.
 - Built an event-driven pipeline using AWS SNS and SQS to ingest catalog merge signals and DynamoDB to track each merge through completion, cutting reconciliation from thousands of hours to under 24 hours.
 - Ran a scheduled AWS Batch job that re-checks inventory on a cadence and moves stock until it fully clears, using S3 snapshots for lookups and DynamoDB TTL for automatic cleanup.

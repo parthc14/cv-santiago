@@ -12,8 +12,8 @@ export const groceryIdentContent = {
       overview: {
         title: 'Overview',
         content: [
-          'Built at Amazon Physical Stores, the Grocery Identification Microservice processes 10K-100K inventory updates per day in near real-time.',
-          'This service provides the foundation for inventory accuracy, supply chain optimization, and operational decision-making across physical grocery stores.',
+          'Built at Amazon WW Grocery, the Grocery Identification Microservice processes 10K-100K inventory updates per day in near real-time.',
+          'This service provides the foundation for inventory accuracy, supply chain optimization, and operational decision-making across grocery stores.',
         ],
       },
       requirements: {

@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback, useMemo, useReducer, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'motion/react'
-import { Mail, ExternalLink, Briefcase, GraduationCap, Code, BadgeCheck, FolderGit2, SkipForward, List, Bot, Zap, Globe } from 'lucide-react'
+import { Mail, ExternalLink, Briefcase, GraduationCap, Code, BadgeCheck, FolderGit2, SkipForward, List, Bot, Zap, Globe, ArrowRight } from 'lucide-react'
 import { translations, seo, type Lang } from './i18n'
 import { useHomeSeo } from './articles/use-article-seo'
 import { getTechIcon } from './tech-icons'
+import { articleRegistry } from './articles/registry'
 
 
 function LinkedInLogo({ className = "w-4 h-4" }: { className?: string }) {
@@ -275,7 +276,6 @@ function useTypewriterRotation(roles: readonly string[], { typeSpeed = 80, delet
 const HOME_TOC_SECTIONS = [
   { id: 'experience', label: 'Experience' },
   { id: 'projects', label: 'Projects' },
-  { id: 'speaking', label: 'Sharing' },
   { id: 'education', label: 'Education' },
   { id: 'tech', label: 'Skills & Stack' },
   { id: 'contact', label: 'Contact' },
@@ -1360,6 +1360,7 @@ function StorySection({ t }: { t: (typeof translations)[Lang] }) {
             const icons: Record<string, React.ReactNode> = {
               briefcase: <Briefcase className="w-4 h-4" />,
               folder: <FolderGit2 className="w-4 h-4" />,
+              zap: <Zap className="w-4 h-4" />,
               mail: <Mail className="w-4 h-4" />,
               bot: <Bot className="w-4 h-4" />
             }
@@ -1548,6 +1549,64 @@ function App() {
                 </ul>
               </div>
             </AnimatedSection>
+          </section>
+
+          {/* Work Summary — one card per project page in the article registry */}
+          <section id="projects" className="scroll-mt-16 mb-12">
+            <h2 className="font-display text-4xl font-bold mb-4 flex items-center gap-3">
+              <FolderGit2 className="w-8 h-8 text-primary" />
+              {t.projects.title}
+            </h2>
+            <p className="text-muted-foreground mb-8 text-lg">{t.projects.desc}</p>
+
+            <div className="grid md:grid-cols-2 gap-6">
+              {articleRegistry.filter(a => a.summary).map((article, i) => {
+                const s = article.summary!
+                return (
+                  <AnimatedSection key={article.id} delay={i * 0.1}>
+                    <div className="group relative flex flex-col h-full p-6 rounded-lg border border-border/50 bg-card hover:border-primary/40 hover:bg-primary/5 transition-colors">
+                      <span className="text-xs text-primary font-medium">{s.org} · {s.period}</span>
+                      <h3 className="font-display text-2xl font-bold mt-1 mb-2 group-hover:text-primary transition-colors">{article.titles.en}</h3>
+                      <p className="text-sm text-muted-foreground mb-5">{s.blurb}</p>
+
+                      <dl className="grid grid-cols-3 gap-3 mb-5">
+                        {s.stats.map(stat => (
+                          <div key={stat.label} className="min-w-0 flex flex-col-reverse">
+                            <dt className="text-xs text-muted-foreground leading-snug">{stat.label}</dt>
+                            <dd className="font-display text-lg md:text-xl font-bold text-foreground">{stat.value}</dd>
+                          </div>
+                        ))}
+                      </dl>
+
+                      <ul className="flex flex-wrap gap-2 mb-6" aria-label="Technologies">
+                        {s.tags.map(tag => (
+                          <li key={tag} className="px-2.5 py-1 rounded-full text-xs border border-border bg-background/60 text-muted-foreground">{tag}</li>
+                        ))}
+                      </ul>
+
+                      <div className="mt-auto flex flex-col items-start gap-3">
+                        {/* Stretched link: the whole card opens the project page */}
+                        <Link
+                          to={`/${article.slugs.en}`}
+                          className="inline-flex items-center gap-1.5 text-sm font-medium text-primary after:absolute after:inset-0 after:rounded-lg"
+                        >
+                          {t.projects.cta}
+                          <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" aria-hidden="true" />
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => window.dispatchEvent(new CustomEvent('openChat', { detail: { query: `Tell me about ${article.titles.en}` } }))}
+                          className="relative z-10 inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+                        >
+                          <Bot className="w-4 h-4" aria-hidden="true" />
+                          {t.projects.askCta}
+                        </button>
+                      </div>
+                    </div>
+                  </AnimatedSection>
+                )
+              })}
+            </div>
           </section>
 
           {/* AI & Automation */}

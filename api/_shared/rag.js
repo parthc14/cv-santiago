@@ -185,7 +185,9 @@ export function extractSources(chunks) {
 // Keywords that signal the response actually references a given article
 export const ARTICLE_KEYWORDS = {
   'hawk':                   ['hawk', 'bottleneck', 'predictive eta', 'operational intelligence'],
-  'grocery-identification': ['grocery identification', 'grocery-only', 'core inventory', 'catalog merge'],
+  'grocery-identification': ['grocery identification', 'grocery-only', 'core inventory'],
+  'barcode-multi-asin':     ['multiple asins', 'catalog merge', 'discontinued product', '$1.55m'],
+  'multi-region-migration': ['multi-region', 'data migration', '10m+ records', 'relational to nosql'],
   'resume':                 ['resume', 'cv', 'work history', 'career history', 'currículum'],
 }
 
@@ -204,6 +206,8 @@ export function filterSourcesByResponse(sources, responseText) {
 export const ARTICLE_ROUTES = {
   'hawk':                   { page_path_es: '/hawk', page_path_en: '/hawk' },
   'grocery-identification': { page_path_es: '/grocery-identification', page_path_en: '/grocery-identification' },
+  'barcode-multi-asin':     { page_path_es: '/barcode-multi-asin', page_path_en: '/barcode-multi-asin' },
+  'multi-region-migration': { page_path_es: '/multi-region-migration', page_path_en: '/multi-region-migration' },
   'resume':                 { page_path_es: '/about', page_path_en: '/about' },
 }
 
