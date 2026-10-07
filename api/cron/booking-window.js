@@ -7,9 +7,10 @@
 
 import { updateBookingWindow } from '../_shared/cal.js'
 
+// Edge runtime hands the handler a Web Request (req.headers.get); the
+// nodejs runtime passes a Node IncomingMessage and this handler would crash.
 export const config = {
-  runtime: 'nodejs',
-  maxDuration: 30,
+  runtime: 'edge',
 }
 
 export default async function handler(req) {
