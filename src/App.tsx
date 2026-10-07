@@ -1595,7 +1595,7 @@ function App() {
                         </Link>
                         <button
                           type="button"
-                          onClick={() => window.dispatchEvent(new CustomEvent('openChat', { detail: { query: article.titles.en } }))}
+                          onClick={() => window.dispatchEvent(new CustomEvent('openChat', { detail: { query: `Tell me about ${article.titles.en}` } }))}
                           className="relative z-10 inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
                         >
                           <Bot className="w-4 h-4" aria-hidden="true" />
