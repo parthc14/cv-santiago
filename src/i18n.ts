@@ -99,7 +99,8 @@ export const translations = {
     projects: {
       title: 'Work Summary',
       desc: 'Deep dives into systems I designed and shipped — architecture, trade-offs, and impact.',
-      cta: 'Read case study',
+      cta: 'Read more about this',
+      askCta: 'Ask the chatbot',
     },
     aiAutomation: {
       title: 'AI & Automation Interest',

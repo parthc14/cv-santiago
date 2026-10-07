@@ -217,9 +217,15 @@ export default function FloatingChat({ lang }: FloatingChatProps) {
     }
   }, [isOpen, isMobile, mode]);
 
-  // Escuchar evento global para abrir chat desde otros componentes
+  // Escuchar evento global para abrir chat desde otros componentes.
+  // An optional `detail.query` is sent as a message once the chat is free.
+  const [pendingQuery, setPendingQuery] = useState<string | null>(null);
   useEffect(() => {
-    const handleOpenChat = () => setIsOpen(true);
+    const handleOpenChat = (e: Event) => {
+      setIsOpen(true);
+      const query = (e as CustomEvent<{ query?: string } | undefined>).detail?.query;
+      if (query) setPendingQuery(query);
+    };
     window.addEventListener('openChat', handleOpenChat);
     return () => window.removeEventListener('openChat', handleOpenChat);
   }, []);
@@ -543,6 +549,13 @@ export default function FloatingChat({ lang }: FloatingChatProps) {
   const handlePromptClick = (query: string) => {
     sendMessage(query);
   };
+
+  // Send a query handed over via the openChat event, waiting out any in-flight reply
+  useEffect(() => {
+    if (!pendingQuery || isLoading) return;
+    setPendingQuery(null);
+    sendMessage(pendingQuery);
+  }, [pendingQuery, isLoading]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (immersive) return null;
 

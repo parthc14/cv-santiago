@@ -1564,10 +1564,7 @@ function App() {
                 const s = article.summary!
                 return (
                   <AnimatedSection key={article.id} delay={i * 0.1}>
-                    <Link
-                      to={`/${article.slugs.en}`}
-                      className="group flex flex-col h-full p-6 rounded-lg border border-border/50 bg-card hover:border-primary/40 hover:bg-primary/5 transition-colors"
-                    >
+                    <div className="group relative flex flex-col h-full p-6 rounded-lg border border-border/50 bg-card hover:border-primary/40 hover:bg-primary/5 transition-colors">
                       <span className="text-xs text-primary font-medium">{s.org} · {s.period}</span>
                       <h3 className="font-display text-2xl font-bold mt-1 mb-2 group-hover:text-primary transition-colors">{article.titles.en}</h3>
                       <p className="text-sm text-muted-foreground mb-5">{s.blurb}</p>
@@ -1587,11 +1584,25 @@ function App() {
                         ))}
                       </ul>
 
-                      <span className="mt-auto inline-flex items-center gap-1.5 text-sm font-medium text-primary">
-                        {t.projects.cta}
-                        <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" aria-hidden="true" />
-                      </span>
-                    </Link>
+                      <div className="mt-auto flex flex-wrap items-center gap-x-6 gap-y-3">
+                        {/* Stretched link: the whole card opens the project page */}
+                        <Link
+                          to={`/${article.slugs.en}`}
+                          className="inline-flex items-center gap-1.5 text-sm font-medium text-primary after:absolute after:inset-0 after:rounded-lg"
+                        >
+                          {t.projects.cta}
+                          <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" aria-hidden="true" />
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => window.dispatchEvent(new CustomEvent('openChat', { detail: { query: article.titles.en } }))}
+                          className="relative z-10 inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+                        >
+                          <Bot className="w-4 h-4" aria-hidden="true" />
+                          {t.projects.askCta}
+                        </button>
+                      </div>
+                    </div>
                   </AnimatedSection>
                 )
               })}
