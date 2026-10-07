@@ -1,7 +1,11 @@
 /**
  * Cal.com availability rules for the "Book 30 mins with me" button.
  *
- * Hours (set once by scripts/cal-setup.ts): weekdays 08:30–11:00 Pacific.
+ * Visibility (set by scripts/cal-setup.ts): the 30min event is hidden from the
+ * public Cal.com profile and every other event type is hidden too, so the
+ * site's button is the only way to book.
+ * Hours (set by scripts/cal-setup.ts): weekdays 08:30–11:00 Pacific, on a
+ * dedicated schedule so the account's default schedule is left alone.
  * Earliest bookable day (refreshed daily by api/cron/booking-window.js):
  *   - Mon–Wed → next Monday
  *   - Thu–Sun → the Thursday of next week
@@ -13,6 +17,8 @@ export const CAL_TIME_ZONE = 'America/Los_Angeles'
 // Keep in sync with PROFILE.calLink in src/profile-data.ts
 export const CAL_USERNAME = 'parth-chitroda-agqews'
 export const CAL_EVENT_SLUG = '30min'
+export const CAL_EVENT_TITLE = '30 min meeting'
+export const CAL_SCHEDULE_NAME = 'Website bookings'
 export const WEEKDAY_HOURS = { startTime: '08:30', endTime: '11:00' }
 /** How far past the earliest day bookings stay open ("next week onwards") */
 export const BOOKING_HORIZON_DAYS = 365
@@ -75,10 +81,15 @@ async function calFetch(path, { version, method = 'GET', body } = {}) {
   return json.data
 }
 
-export async function getEventType() {
+async function findEventType() {
   const params = new URLSearchParams({ username: CAL_USERNAME, eventSlug: CAL_EVENT_SLUG })
   const [eventType] = await calFetch(`/event-types?${params}`, { version: EVENT_TYPES_VERSION })
-  if (!eventType) throw new Error(`Cal.com event type ${CAL_USERNAME}/${CAL_EVENT_SLUG} not found`)
+  return eventType ?? null
+}
+
+export async function getEventType() {
+  const eventType = await findEventType()
+  if (!eventType) throw new Error(`Cal.com event type ${CAL_USERNAME}/${CAL_EVENT_SLUG} not found — run npm run cal:setup`)
   return eventType
 }
 
@@ -94,18 +105,40 @@ export async function updateBookingWindow(now = new Date()) {
   return { eventTypeId: eventType.id, bookingWindow: window }
 }
 
-/** Set the event's schedule to weekdays 08:30–11:00 Pacific */
-export async function setWeekdayHours() {
-  const eventType = await getEventType()
-  const scheduleId = eventType.scheduleId
-    ?? (await calFetch('/schedules/default', { version: SCHEDULES_VERSION })).id
-  await calFetch(`/schedules/${scheduleId}`, {
-    version: SCHEDULES_VERSION,
-    method: 'PATCH',
-    body: {
-      timeZone: CAL_TIME_ZONE,
-      availability: [{ days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'], ...WEEKDAY_HOURS }],
-    },
-  })
-  return { scheduleId, timeZone: CAL_TIME_ZONE, ...WEEKDAY_HOURS }
+const WEEKDAY_AVAILABILITY = [{ days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'], ...WEEKDAY_HOURS }]
+
+/** Create (or reset) the dedicated weekday 08:30–11:00 Pacific schedule */
+export async function ensureSchedule() {
+  const schedules = await calFetch('/schedules', { version: SCHEDULES_VERSION })
+  const existing = schedules.find(s => s.name === CAL_SCHEDULE_NAME)
+  const body = { timeZone: CAL_TIME_ZONE, availability: WEEKDAY_AVAILABILITY }
+  const schedule = existing
+    ? await calFetch(`/schedules/${existing.id}`, { version: SCHEDULES_VERSION, method: 'PATCH', body })
+    : await calFetch('/schedules', { version: SCHEDULES_VERSION, method: 'POST', body: { name: CAL_SCHEDULE_NAME, isDefault: false, ...body } })
+  return { scheduleId: schedule.id, created: !existing }
+}
+
+/** Create (or update) the hidden 30min event on the given schedule */
+export async function ensureEventType(scheduleId, now = new Date()) {
+  const existing = await findEventType()
+  const body = { hidden: true, scheduleId, bookingWindow: bookingWindow(now) }
+  const eventType = existing
+    ? await calFetch(`/event-types/${existing.id}`, { version: EVENT_TYPES_VERSION, method: 'PATCH', body })
+    : await calFetch('/event-types', {
+        version: EVENT_TYPES_VERSION,
+        method: 'POST',
+        body: { title: CAL_EVENT_TITLE, slug: CAL_EVENT_SLUG, lengthInMinutes: 30, ...body },
+      })
+  return { eventTypeId: eventType.id, created: !existing, bookingWindow: body.bookingWindow }
+}
+
+/** Hide every other public event type so the profile page offers nothing */
+export async function hideOtherEventTypes() {
+  const params = new URLSearchParams({ username: CAL_USERNAME })
+  const eventTypes = await calFetch(`/event-types?${params}`, { version: EVENT_TYPES_VERSION })
+  const toHide = eventTypes.filter(e => e.slug !== CAL_EVENT_SLUG && !e.hidden)
+  for (const e of toHide) {
+    await calFetch(`/event-types/${e.id}`, { version: EVENT_TYPES_VERSION, method: 'PATCH', body: { hidden: true } })
+  }
+  return toHide.map(e => e.slug)
 }
